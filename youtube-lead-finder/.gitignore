@@ -110,3 +110,4 @@ data/channels.db
 data/leads.csv
 logs/
 *.log
+features_to_add.txt
