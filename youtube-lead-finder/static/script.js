@@ -22,7 +22,7 @@ async function loadLeads() {
   } catch (error) {
     console.error("Error loading leads:", error);
     document.getElementById("lead-body").innerHTML =
-      '<tr><td colspan="5" class="px-4 py-4 text-center text-red-500">Error loading leads.</td></tr>';
+      '<tr><td colspan="5" class="px-4 py-4 text-center text-red-500">Error loading leads. Please refresh the page.</td></tr>';
     table.classList.remove("hidden");
   } finally {
     loading.classList.add("hidden");
@@ -181,14 +181,20 @@ document.getElementById("select-all").addEventListener("change", function () {
 function updateSelectAll() {
   const checkboxes = document.querySelectorAll(".lead-checkbox:not(:disabled)");
   const allChecked = Array.from(checkboxes).every((cb) => cb.checked);
-  document.getElementById("select-all").checked = allChecked;
+  const selectAllElement = document.getElementById("select-all");
+  if (selectAllElement) {
+    selectAllElement.checked = allChecked;
+  }
 }
 
 function updateSelectedCount() {
   const selected = document.querySelectorAll(
     ".lead-checkbox:checked:not(:disabled)",
   ).length;
-  document.getElementById("selected-count").textContent = selected;
+  const countElement = document.getElementById("selected-count");
+  if (countElement) {
+    countElement.textContent = selected;
+  }
 }
 
 // Add event listener for checkboxes to update count
@@ -272,7 +278,12 @@ async function sendSelectedEmails() {
   } catch (error) {
     showToast("Error sending selected emails", "error");
   } finally {
-    btn.textContent = "Send Selected (0)";
+    // ✅ FIXED: Restore proper HTML structure instead of textContent
+    btn.innerHTML =
+      '✓ Send Selected <span class="text-xs">(<span id="selected-count">0</span>)</span>';
+    btn.onclick = function () {
+      sendSelectedEmails();
+    }; // Re-attach onclick
     updateSelectedCount();
     btn.disabled = false;
   }

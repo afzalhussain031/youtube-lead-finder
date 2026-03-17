@@ -10,7 +10,11 @@ def index():
 
 @dashboard_bp.route("/api/leads")
 def api_leads():
-    return jsonify(load_leads())
+    try:
+        return jsonify(load_leads())
+    except Exception as e:
+        print(f"Error loading leads: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @dashboard_bp.route("/send-single", methods=["POST"])
 def send_single():

@@ -25,9 +25,10 @@ def load_leads():
     with open(LEADS_FILE, newline='', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         for row in reader:
+            email = row["email"].strip().lower()  # ✅ Normalize to lowercase
             leads.append({
-                "email": row["email"].strip(),
+                "email": email,
                 "channel_name": row["channel_name"].strip(),
-                "contacted": row["email"].strip() in sent,
+                "contacted": email in sent,
             })
     return leads

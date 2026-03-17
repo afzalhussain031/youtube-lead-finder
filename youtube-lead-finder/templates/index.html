@@ -27,10 +27,10 @@
       <div class="card-body">
         <!-- Action Buttons & Search -->
         <div class="flex flex-col sm:flex-row sm:items-center gap-medium mb-6">
-          <button id="send-all-btn" class="btn-primary" title="Send emails to all unsent leads">
+          <button id="send-all-btn" class="btn-primary" title="Send emails to all unsent leads" onclick="sendAllEmails()">
             ✉️ Send All Unsent
           </button>
-          <button id="send-selected-btn" class="btn-secondary" title="Send emails to selected leads only">
+          <button id="send-selected-btn" class="btn-secondary" title="Send emails to selected leads only" onclick="sendSelectedEmails()">
             ✓ Send Selected <span class="text-xs">(<span id="selected-count">0</span>)</span>
           </button>
           <input 
