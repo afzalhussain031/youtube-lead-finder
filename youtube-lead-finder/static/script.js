@@ -218,16 +218,19 @@ async function sendSingleEmail(email, channelName, button) {
     const result = await response.json();
     if (result.success) {
       showToast(`Email sent to ${email}`, "success");
-      await loadProgress(); // Update progress first
-      await loadLeads(); // Then reload table
+      addLog(email, channelName, "success"); // ✅ Log the send
+      await loadProgress();
+      await loadLeads();
     } else {
       showToast(result.message || "Failed to send email", "error");
+      addLog(email, channelName, "error"); // ✅ Log the failure
       button.textContent = "Send";
       button.disabled = false;
       button.classList.remove("loading");
     }
   } catch (error) {
     showToast("Error sending email", "error");
+    addLog(email, channelName, "error"); // ✅ Log the error
     button.textContent = "Send";
     button.disabled = false;
     button.classList.remove("loading");
@@ -243,8 +246,16 @@ async function sendAllEmails() {
     const response = await fetch("/send-all", { method: "POST" });
     const result = await response.json();
     showToast(result.message, result.success ? "success" : "error");
-    await loadProgress(); // Update progress first
-    await loadLeads(); // Then reload leads data
+
+    // ✅ Log all sent emails from the response
+    if (result.success && result.logs) {
+      result.logs.forEach((log) => {
+        addLog(log.email, log.channel_name, "success");
+      });
+    }
+
+    await loadProgress();
+    await loadLeads();
   } catch (error) {
     showToast("Error sending emails", "error");
   } finally {
@@ -273,6 +284,14 @@ async function sendSelectedEmails() {
     });
     const result = await response.json();
     showToast(result.message, result.success ? "success" : "error");
+
+    // ✅ Log all sent emails from the response
+    if (result.success && result.logs) {
+      result.logs.forEach((log) => {
+        addLog(log.email, log.channel_name, "success");
+      });
+    }
+
     await loadProgress(); // Update progress first
     await loadLeads(); // Then reload leads data
   } catch (error) {
@@ -345,6 +364,79 @@ function showBulkProgress() {
   // For now, just reload progress after bulk send
   // In a real implementation, you'd show a modal with real-time updates
   loadProgress();
+}
+
+// Activity Log Management
+let emailLogs = [];
+
+function addLog(email, channelName, status = "success") {
+  const timestamp = new Date().toLocaleTimeString();
+  const logEntry = {
+    email,
+    channelName,
+    status,
+    timestamp,
+  };
+
+  emailLogs.push(logEntry);
+
+  // Show logs section
+  const logsSection = document.getElementById("logs-section");
+  if (logsSection) {
+    logsSection.classList.remove("hidden");
+  }
+
+  // Add log to display
+  const logsList = document.getElementById("logs-list");
+  if (logsList) {
+    const logElement = document.createElement("div");
+    logElement.className = "px-4 py-3 hover:bg-gray-100 transition";
+    logElement.innerHTML = `
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <p class="font-medium text-gray-900">${email}</p>
+          <p class="text-sm text-gray-600">${channelName}</p>
+        </div>
+        <div class="text-right">
+          <span class="text-xs font-semibold px-2 py-1 rounded ${
+            status === "success"
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }">
+            ${status === "success" ? "✓ Sent" : "✗ Failed"}
+          </span>
+          <p class="text-xs text-gray-500 mt-1">${timestamp}</p>
+        </div>
+      </div>
+    `;
+    logsList.insertBefore(logElement, logsList.firstChild);
+  }
+
+  // Update count
+  updateLogsCount();
+}
+
+function clearLogs() {
+  emailLogs = [];
+  const logsList = document.getElementById("logs-list");
+  if (logsList) {
+    logsList.innerHTML = "";
+  }
+  updateLogsCount();
+
+  // Hide logs section if empty
+  const logsSection = document.getElementById("logs-section");
+  if (logsSection && emailLogs.length === 0) {
+    logsSection.classList.add("hidden");
+  }
+}
+
+function updateLogsCount() {
+  const logsCountElement = document.getElementById("logs-count");
+  if (logsCountElement) {
+    const count = emailLogs.length;
+    logsCountElement.textContent = `${count} email${count !== 1 ? "s" : ""} logged`;
+  }
 }
 
 // Initial load

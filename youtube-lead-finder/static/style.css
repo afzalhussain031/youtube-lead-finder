@@ -352,3 +352,40 @@
     transform: translateX(100%);
   }
 } */
+
+/* ================================================================
+   ACTIVITY LOG STYLES
+   ================================================================ */
+
+#logs-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+#logs-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+#logs-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 0.375rem;
+}
+
+#logs-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 0.375rem;
+}
+
+#logs-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+#clear-logs-btn {
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+#clear-logs-btn:hover {
+  background-color: #d1d5db !important;
+  transform: scale(1.02);
+}

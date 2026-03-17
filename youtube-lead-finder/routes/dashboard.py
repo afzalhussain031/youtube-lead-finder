@@ -34,13 +34,24 @@ def send_single():
 def send_all():
     leads = load_leads()
     sent_count = 0
+    logs = []  # ✅ Track logs
     for lead in leads:
         if not lead["contacted"]:
             success = send_personalized_email(lead["email"], lead["channel_name"])
             if success:
                 save_sent_email(lead["email"])
                 sent_count += 1
-    return jsonify({"success": True, "message": f"Sent {sent_count} emails"})
+                # ✅ Log each successful send
+                logs.append({
+                    "email": lead["email"],
+                    "channel_name": lead["channel_name"],
+                    "status": "sent"
+                })
+    return jsonify({
+        "success": True,
+        "message": f"Sent {sent_count} emails",
+        "logs": logs  # ✅ Return logs
+    })
 
 @dashboard_bp.route("/send-selected", methods=["POST"])
 def send_selected():
@@ -48,6 +59,7 @@ def send_selected():
     emails = data.get("emails", [])
     sent = load_sent_emails()
     sent_count = 0
+    logs = []  # ✅ Track logs
     for email in emails:
         if email not in sent:
             leads = load_leads()
@@ -56,7 +68,17 @@ def send_selected():
             if success:
                 save_sent_email(email)
                 sent_count += 1
-    return jsonify({"success": True, "message": f"Sent {sent_count} selected emails"})
+                # ✅ Log each successful send
+                logs.append({
+                    "email": email,
+                    "channel_name": channel_name,
+                    "status": "sent"
+                })
+    return jsonify({
+        "success": True,
+        "message": f"Sent {sent_count} selected emails",
+        "logs": logs  # ✅ Return logs
+    })
 
 @dashboard_bp.route("/api/progress")
 def api_progress():
