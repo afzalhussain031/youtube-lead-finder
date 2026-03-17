@@ -1,0 +1,28 @@
+<!doctype html>
+<title>Lead Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='script.js') }}" defer></script>
+
+<h1>YouTube Lead Dashboard</h1>
+
+<h2>Actions</h2>
+<button id="send-all-btn" onclick="sendAllEmails()">Send Emails (All Unsent)</button>
+<button id="send-selected-btn" onclick="sendSelectedEmails()">Send Selected</button>
+
+<h2>Leads</h2>
+<table border="1" cellpadding="4" cellspacing="0">
+  <thead>
+    <tr>
+      <th><input type="checkbox" id="select-all"></th>
+      <th>Email</th>
+      <th>Channel</th>
+      <th>Contacted?</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="lead-body">
+    <tr><td colspan="5">Loading leads...</td></tr>
+  </tbody>
+</table>
+
+<div id="toast-container"></div>
