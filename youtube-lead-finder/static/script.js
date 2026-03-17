@@ -237,72 +237,127 @@ async function sendSingleEmail(email, channelName, button) {
   }
 }
 
-// Send all unsent emails
+// Send all unsent emails - REALTIME VERSION (one by one)
 async function sendAllEmails() {
   const btn = document.getElementById("send-all-btn");
   btn.textContent = "Sending...";
   btn.disabled = true;
+  
+  const allLeads = leadsData.filter(lead => !lead.contacted);
+  
+  if (allLeads.length === 0) {
+    showToast("No unsent emails", "info");
+    btn.textContent = "Send All Unsent";
+    btn.disabled = false;
+    return;
+  }
+
+  let sentCount = 0;
+  
   try {
-    const response = await fetch("/send-all", { method: "POST" });
-    const result = await response.json();
-    showToast(result.message, result.success ? "success" : "error");
-
-    // ✅ Log all sent emails from the response
-    if (result.success && result.logs) {
-      result.logs.forEach((log) => {
-        addLog(log.email, log.channel_name, "success");
-      });
+    // Send each email one by one with real-time logging
+    for (const lead of allLeads) {
+      try {
+        const response = await fetch("/send-single", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: lead.email,
+            channel_name: lead.channel_name,
+          }),
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          addLog(lead.email, lead.channel_name, "success");  // ✅ LOG IMMEDIATELY
+          sentCount++;
+        } else {
+          addLog(lead.email, lead.channel_name, "error");
+        }
+        
+        // Small delay between emails (optional, prevents server overload)
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(`Error sending to ${lead.email}:`, error);
+        addLog(lead.email, lead.channel_name, "error");
+      }
     }
-
+    
+    showToast(`Sent ${sentCount} emails`, "success");
     await loadProgress();
     await loadLeads();
   } catch (error) {
-    showToast("Error sending emails", "error");
+    showToast("Error in bulk send operation", "error");
   } finally {
     btn.textContent = "Send All Unsent";
     btn.disabled = false;
   }
 }
 
-// Send selected emails
+// Send selected emails - REALTIME VERSION (one by one)
 async function sendSelectedEmails() {
   const selected = Array.from(
     document.querySelectorAll(".lead-checkbox:checked"),
   ).map((cb) => cb.dataset.email);
+
   if (selected.length === 0) {
     showToast("No leads selected", "warning");
     return;
   }
+
   const btn = document.getElementById("send-selected-btn");
   btn.textContent = "Sending...";
   btn.disabled = true;
-  try {
-    const response = await fetch("/send-selected", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emails: selected }),
-    });
-    const result = await response.json();
-    showToast(result.message, result.success ? "success" : "error");
 
-    // ✅ Log all sent emails from the response
-    if (result.success && result.logs) {
-      result.logs.forEach((log) => {
-        addLog(log.email, log.channel_name, "success");
-      });
+  let sentCount = 0;
+
+  try {
+    // Send each email one by one with real-time logging
+    for (const email of selected) {
+      try {
+        // Find the lead to get channel name
+        const lead = leadsData.find((l) => l.email === email);
+        if (!lead) continue;
+
+        const response = await fetch("/send-single", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email,
+            channel_name: lead.channel_name,
+          }),
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          addLog(email, lead.channel_name, "success");  // ✅ LOG IMMEDIATELY
+          sentCount++;
+        } else {
+          addLog(email, lead.channel_name, "error");
+        }
+
+        // Small delay between emails (optional, prevents server overload)
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(`Error sending to ${email}:`, error);
+        const lead = leadsData.find((l) => l.email === email);
+        if (lead) {
+          addLog(email, lead.channel_name, "error");
+        }
+      }
     }
 
-    await loadProgress(); // Update progress first
-    await loadLeads(); // Then reload leads data
+    showToast(`Sent ${sentCount} selected emails`, "success");
+    await loadProgress();
+    await loadLeads();
   } catch (error) {
-    showToast("Error sending selected emails", "error");
+    showToast("Error in send operation", "error");
   } finally {
-    // ✅ FIXED: Restore proper HTML structure instead of textContent
     btn.innerHTML =
       '✓ Send Selected <span class="text-xs">(<span id="selected-count">0</span>)</span>';
     btn.onclick = function () {
       sendSelectedEmails();
-    }; // Re-attach onclick
+    };
     updateSelectedCount();
     btn.disabled = false;
   }
