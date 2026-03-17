@@ -108,6 +108,14 @@ function applyFilters() {
     return matchesSearch;
   });
 
+  // 3. Sort: pending leads first, sent leads at end (alphabetically within each group)
+  filteredLeads.sort((a, b) => {
+    if (a.contacted !== b.contacted) {
+      return a.contacted ? 1 : -1; // Pending (false) first, Sent (true) last
+    }
+    return a.email.localeCompare(b.email); // Alphabetical within same status
+  });
+
   renderTable();
 }
 
@@ -204,7 +212,8 @@ async function sendSingleEmail(email, channelName, button) {
     const result = await response.json();
     if (result.success) {
       showToast(`Email sent to ${email}`, "success");
-      await loadLeads();
+      await loadProgress(); // Update progress first
+      await loadLeads(); // Then reload table
     } else {
       showToast(result.message || "Failed to send email", "error");
       button.textContent = "Send";
@@ -228,8 +237,8 @@ async function sendAllEmails() {
     const response = await fetch("/send-all", { method: "POST" });
     const result = await response.json();
     showToast(result.message, result.success ? "success" : "error");
-    await loadLeads();
-    await loadProgress();
+    await loadProgress(); // Update progress first
+    await loadLeads(); // Then reload leads data
   } catch (error) {
     showToast("Error sending emails", "error");
   } finally {
@@ -258,8 +267,8 @@ async function sendSelectedEmails() {
     });
     const result = await response.json();
     showToast(result.message, result.success ? "success" : "error");
-    await loadLeads();
-    await loadProgress();
+    await loadProgress(); // Update progress first
+    await loadLeads(); // Then reload leads data
   } catch (error) {
     showToast("Error sending selected emails", "error");
   } finally {
@@ -305,14 +314,14 @@ async function loadProgress() {
   try {
     const response = await fetch("/api/progress");
     const data = await response.json();
-    
+
     document.getElementById("total-leads").textContent = data.total;
     document.getElementById("sent-leads").textContent = data.sent;
     document.getElementById("pending-leads").textContent = data.pending;
-    
+
     const progressBar = document.getElementById("campaign-progress");
     const progressText = document.getElementById("progress-text");
-    
+
     progressBar.style.width = `${data.percentage}%`;
     progressText.textContent = `${Math.round(data.percentage)}% Complete`;
   } catch (error) {
