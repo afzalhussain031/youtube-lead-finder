@@ -414,7 +414,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -422,15 +423,71 @@
   }
 }
 
-#pause-btn, #stop-btn {
+#pause-btn,
+#stop-btn {
   transition: all 0.2s ease;
 }
 
-#pause-btn:hover, #stop-btn:hover {
+#pause-btn:hover,
+#stop-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-#pause-btn:active, #stop-btn:active {
+#pause-btn:active,
+#stop-btn:active {
   transform: translateY(0);
+}
+
+/* ================================================================
+   CUSTOM CONFIRMATION MODAL STYLES
+   ================================================================ */
+
+#confirm-modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+#confirm-modal-overlay.hidden {
+  animation: fadeOut 0.2s ease-out forwards;
+}
+
+#confirm-modal-box {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+#confirm-modal-cancel:active {
+  transform: scale(0.98);
+}
+
+#confirm-modal-confirm:active {
+  transform: scale(0.98);
 }

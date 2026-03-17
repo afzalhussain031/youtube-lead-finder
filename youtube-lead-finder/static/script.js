@@ -7,15 +7,73 @@ let activeFilter = "all"; // Track active filter (all, pending, sent)
 // Controls pause, stop, resume of bulk email sending
 // ================================================================
 let sendState = {
-  isRunning: false,      // Currently sending?
-  isPaused: false,       // Paused?
-  isStopped: false,      // User clicked stop?
-  currentIndex: 0,       // Which email are we on?
-  totalCount: 0,         // Total emails to send
-  sentCount: 0,          // Successfully sent
-  failedCount: 0,        // Failed sends
-  emailsToSend: [],      // Queue of emails
+  isRunning: false, // Currently sending?
+  isPaused: false, // Paused?
+  isStopped: false, // User clicked stop?
+  currentIndex: 0, // Which email are we on?
+  totalCount: 0, // Total emails to send
+  sentCount: 0, // Successfully sent
+  failedCount: 0, // Failed sends
+  emailsToSend: [], // Queue of emails
 };
+
+// ================================================================
+// CUSTOM CONFIRMATION MODAL SYSTEM
+// Replaces browser confirm() with beautiful on-page dialog
+// ================================================================
+let confirmAction = null; // Stores the function to execute on confirm
+
+function showConfirmModal(
+  title,
+  message,
+  confirmButtonText = "Confirm",
+  cancelButtonText = "Cancel",
+  callback = null,
+) {
+  // Set title and message
+  const titleEl = document.getElementById("confirm-modal-title");
+  if (titleEl) titleEl.textContent = title;
+
+  const messageEl = document.getElementById("confirm-modal-message");
+  if (messageEl) messageEl.textContent = message;
+
+  // Set button text
+  const confirmBtn = document.getElementById("confirm-modal-confirm");
+  if (confirmBtn) confirmBtn.textContent = confirmButtonText;
+
+  const cancelBtn = document.getElementById("confirm-modal-cancel");
+  if (cancelBtn) cancelBtn.textContent = cancelButtonText;
+
+  // Store callback (the function to execute if user confirms)
+  confirmAction = callback;
+
+  // Show modal
+  const overlay = document.getElementById("confirm-modal-overlay");
+  if (overlay) {
+    overlay.classList.remove("hidden");
+  }
+}
+
+function closeConfirmModal() {
+  // Hide modal
+  const overlay = document.getElementById("confirm-modal-overlay");
+  if (overlay) {
+    overlay.classList.add("hidden");
+  }
+
+  // Clear callback
+  confirmAction = null;
+}
+
+function executeConfirmAction() {
+  // Execute the stored callback if it exists
+  if (confirmAction && typeof confirmAction === "function") {
+    confirmAction();
+  }
+
+  // Close modal
+  closeConfirmModal();
+}
 
 // Load leads and populate table
 async function loadLeads() {
@@ -268,24 +326,25 @@ function hideSendControlPanel() {
 }
 
 function updateSendProgress() {
-  const percentage = sendState.totalCount > 0 
-    ? (sendState.currentIndex / sendState.totalCount) * 100 
-    : 0;
-  
+  const percentage =
+    sendState.totalCount > 0
+      ? (sendState.currentIndex / sendState.totalCount) * 100
+      : 0;
+
   const progressBar = document.getElementById("send-progress-bar");
   if (progressBar) {
     progressBar.style.width = `${percentage}%`;
   }
-  
+
   const currentCountEl = document.getElementById("send-current-count");
   if (currentCountEl) currentCountEl.textContent = sendState.sentCount;
-  
+
   const totalCountEl = document.getElementById("send-total-count");
   if (totalCountEl) totalCountEl.textContent = sendState.totalCount;
-  
+
   const failedCountEl = document.getElementById("send-failed-count");
   if (failedCountEl) failedCountEl.textContent = sendState.failedCount;
-  
+
   const statusText = document.getElementById("send-status-text");
   if (statusText) {
     if (sendState.isPaused) {
@@ -296,7 +355,7 @@ function updateSendProgress() {
       statusText.textContent = "Sending emails...";
     }
   }
-  
+
   const pauseBtn = document.getElementById("pause-btn");
   if (pauseBtn) {
     pauseBtn.textContent = sendState.isPaused ? "▶️ Resume" : "⏸️ Pause";
@@ -306,7 +365,7 @@ function updateSendProgress() {
 function togglePauseSend() {
   sendState.isPaused = !sendState.isPaused;
   updateSendProgress();
-  
+
   if (sendState.isPaused) {
     showToast("Operation paused. Click Resume to continue.", "info");
   } else {
@@ -315,12 +374,19 @@ function togglePauseSend() {
 }
 
 function stopSend() {
-  const confirmed = confirm("Are you sure you want to stop sending? This will cancel the rest of the emails.");
-  if (confirmed) {
-    sendState.isStopped = true;
-    updateSendProgress();
-    showToast("Stopping email operation...", "warning");
-  }
+  // Show beautiful custom modal instead of browser confirm()
+  showConfirmModal(
+    "⏹️ Stop Email Operation?",
+    "Are you sure you want to stop sending? This will cancel the rest of the unsent emails in the queue.",
+    "Stop Operation",
+    "Continue Sending",
+    () => {
+      // This callback executes if user clicks "Stop Operation" (confirm)
+      sendState.isStopped = true;
+      updateSendProgress();
+      showToast("Stopping email operation...", "warning");
+    },
+  );
 }
 
 // Send all unsent emails - WITH PAUSE/STOP/RESUME CONTROL
@@ -328,9 +394,9 @@ async function sendAllEmails() {
   const btn = document.getElementById("send-all-btn");
   btn.textContent = "Sending...";
   btn.disabled = true;
-  
-  const allLeads = leadsData.filter(lead => !lead.contacted);
-  
+
+  const allLeads = leadsData.filter((lead) => !lead.contacted);
+
   if (allLeads.length === 0) {
     showToast("No unsent emails", "info");
     btn.textContent = "Send All Unsent";
@@ -353,31 +419,31 @@ async function sendAllEmails() {
   // ✅ Show control panel
   showSendControlPanel();
   updateSendProgress();
-  
+
   try {
     // ✅ Loop through emails with pause/stop checks
     for (let i = 0; i < allLeads.length; i++) {
       const lead = allLeads[i];
       sendState.currentIndex = i + 1;
-      
+
       // ✅ CHECK 1: If user clicked stop, exit loop immediately
       if (sendState.isStopped) {
         showToast("Email sending stopped by user", "warning");
         break;
       }
-      
+
       // ✅ CHECK 2: If paused, wait until resumed
       while (sendState.isPaused && !sendState.isStopped) {
         updateSendProgress();
-        await new Promise(resolve => setTimeout(resolve, 500)); // Check every 500ms
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Check every 500ms
       }
-      
+
       // ✅ CHECK 3: If stopped while paused, exit
       if (sendState.isStopped) {
         showToast("Email sending stopped by user", "warning");
         break;
       }
-      
+
       try {
         // Send the email
         const response = await fetch("/send-single", {
@@ -389,7 +455,7 @@ async function sendAllEmails() {
           }),
         });
         const result = await response.json();
-        
+
         if (result.success) {
           addLog(lead.email, lead.channel_name, "success");
           sendState.sentCount++;
@@ -402,21 +468,24 @@ async function sendAllEmails() {
         addLog(lead.email, lead.channel_name, "error");
         sendState.failedCount++;
       }
-      
+
       // Update UI after each email
       updateSendProgress();
-      
+
       // Small delay between emails
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    
+
     // ✅ Operation complete
     if (sendState.isStopped) {
       showToast(`Stopped at ${sendState.sentCount} emails sent`, "warning");
     } else {
-      showToast(`Successfully sent ${sendState.sentCount} emails, ${sendState.failedCount} failed`, "success");
+      showToast(
+        `Successfully sent ${sendState.sentCount} emails, ${sendState.failedCount} failed`,
+        "success",
+      );
     }
-    
+
     await loadProgress();
     await loadLeads();
   } catch (error) {
@@ -427,7 +496,7 @@ async function sendAllEmails() {
     sendState.isRunning = false;
     btn.textContent = "Send All Unsent";
     btn.disabled = false;
-    
+
     // Hide control panel after 3 seconds
     setTimeout(() => {
       hideSendControlPanel();
@@ -471,19 +540,19 @@ async function sendSelectedEmails() {
     for (let i = 0; i < selected.length; i++) {
       const email = selected[i];
       sendState.currentIndex = i + 1;
-      
+
       // ✅ CHECK 1: If user clicked stop, exit loop immediately
       if (sendState.isStopped) {
         showToast("Email sending stopped by user", "warning");
         break;
       }
-      
+
       // ✅ CHECK 2: If paused, wait until resumed
       while (sendState.isPaused && !sendState.isStopped) {
         updateSendProgress();
-        await new Promise(resolve => setTimeout(resolve, 500)); // Check every 500ms
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Check every 500ms
       }
-      
+
       // ✅ CHECK 3: If stopped while paused, exit
       if (sendState.isStopped) {
         showToast("Email sending stopped by user", "warning");
@@ -520,21 +589,24 @@ async function sendSelectedEmails() {
         }
         sendState.failedCount++;
       }
-      
+
       // Update UI after each email
       updateSendProgress();
 
       // Small delay between emails
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     // ✅ Operation complete
     if (sendState.isStopped) {
       showToast(`Stopped at ${sendState.sentCount} emails sent`, "warning");
     } else {
-      showToast(`Successfully sent ${sendState.sentCount} emails, ${sendState.failedCount} failed`, "success");
+      showToast(
+        `Successfully sent ${sendState.sentCount} emails, ${sendState.failedCount} failed`,
+        "success",
+      );
     }
-    
+
     await loadProgress();
     await loadLeads();
   } catch (error) {
@@ -550,7 +622,7 @@ async function sendSelectedEmails() {
     };
     updateSelectedCount();
     btn.disabled = false;
-    
+
     // Hide control panel after 3 seconds
     setTimeout(() => {
       hideSendControlPanel();
