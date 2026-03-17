@@ -28,6 +28,12 @@ Create a Simple Web Dashboard:
 A page section showing the latest send results / log output
 A filter to show only “not contacted” leads
 A confirmation prompt before sending emails
-A nicer HTML template (instead of inline HTML)
 campaign progress bars
 charts showing email statistics
+
+
+Phase 1: 
+Add Tailwind CSS for modern styling.
+Improve button styles with gradients and hover effects.
+Add better toasts with animations
+Use a modern font.
