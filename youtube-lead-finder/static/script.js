@@ -229,6 +229,7 @@ async function sendAllEmails() {
     const result = await response.json();
     showToast(result.message, result.success ? "success" : "error");
     await loadLeads();
+    await loadProgress();
   } catch (error) {
     showToast("Error sending emails", "error");
   } finally {
@@ -258,6 +259,7 @@ async function sendSelectedEmails() {
     const result = await response.json();
     showToast(result.message, result.success ? "success" : "error");
     await loadLeads();
+    await loadProgress();
   } catch (error) {
     showToast("Error sending selected emails", "error");
   } finally {
@@ -298,5 +300,33 @@ function showToast(message, type) {
   }, 3000);
 }
 
+// Load and display campaign progress
+async function loadProgress() {
+  try {
+    const response = await fetch("/api/progress");
+    const data = await response.json();
+    
+    document.getElementById("total-leads").textContent = data.total;
+    document.getElementById("sent-leads").textContent = data.sent;
+    document.getElementById("pending-leads").textContent = data.pending;
+    
+    const progressBar = document.getElementById("campaign-progress");
+    const progressText = document.getElementById("progress-text");
+    
+    progressBar.style.width = `${data.percentage}%`;
+    progressText.textContent = `${Math.round(data.percentage)}% Complete`;
+  } catch (error) {
+    console.error("Error loading progress:", error);
+  }
+}
+
+// Show bulk send progress modal
+function showBulkProgress() {
+  // For now, just reload progress after bulk send
+  // In a real implementation, you'd show a modal with real-time updates
+  loadProgress();
+}
+
 // Initial load
 loadLeads();
+loadProgress();

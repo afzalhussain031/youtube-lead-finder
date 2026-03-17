@@ -73,6 +73,33 @@
     </section>
 
     <!-- ============================================================
+         CAMPAIGN PROGRESS SECTION
+         ============================================================ -->
+    <section class="card mb-6">
+      <div class="card-body">
+        <h2 class="text-xl font-semibold mb-4">📊 Campaign Progress</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600" id="total-leads">0</div>
+            <div class="text-sm text-gray-600">Total Leads</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-green-600" id="sent-leads">0</div>
+            <div class="text-sm text-gray-600">Emails Sent</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-orange-600" id="pending-leads">0</div>
+            <div class="text-sm text-gray-600">Pending</div>
+          </div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="campaign-progress" style="width: 0%"></div>
+        </div>
+        <div class="text-sm text-gray-600 mt-2 text-center" id="progress-text">0% Complete</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
          LEADS TABLE SECTION
          States: Loading, Empty, Table
          ============================================================ -->

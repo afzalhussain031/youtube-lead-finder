@@ -53,3 +53,17 @@ def send_selected():
                 save_sent_email(email)
                 sent_count += 1
     return jsonify({"success": True, "message": f"Sent {sent_count} selected emails"})
+
+@dashboard_bp.route("/api/progress")
+def api_progress():
+    leads = load_leads()
+    sent = load_sent_emails()
+    total_leads = len(leads)
+    sent_count = len(sent)
+    pending_count = total_leads - sent_count
+    return jsonify({
+        "total": total_leads,
+        "sent": sent_count,
+        "pending": pending_count,
+        "percentage": (sent_count / total_leads * 100) if total_leads > 0 else 0
+    })
