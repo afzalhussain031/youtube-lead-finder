@@ -63,6 +63,56 @@
             />
           </div>
 
+          <!-- ============================================================
+               SEND OPERATION CONTROL PANEL
+               Shows during bulk send with pause/stop/resume controls
+               ============================================================ -->
+          <div 
+            id="send-control-panel" 
+            class="hidden bg-blue-50 border border-blue-200 rounded p-4 mb-4"
+          >
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <!-- Status and Progress -->
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="inline-block w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span class="font-semibold text-blue-900" id="send-status-text">Sending emails...</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    id="send-progress-bar" 
+                    class="bg-blue-500 h-2 rounded-full transition-all" 
+                    style="width: 0%"
+                  ></div>
+                </div>
+                <div class="text-xs text-gray-600 mt-2">
+                  <span id="send-current-count">0</span> of <span id="send-total-count">0</span> sent
+                  | <span id="send-failed-count">0</span> failed
+                </div>
+              </div>
+              
+              <!-- Control Buttons -->
+              <div class="flex gap-2">
+                <button
+                  id="pause-btn"
+                  class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded font-medium transition"
+                  onclick="togglePauseSend()"
+                  title="Pause the sending operation"
+                >
+                  ⏸️ Pause
+                </button>
+                <button
+                  id="stop-btn"
+                  class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded font-medium transition"
+                  onclick="stopSend()"
+                  title="Stop the sending operation"
+                >
+                  ⏹️ Stop
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Filter Tabs -->
           <div class="flex flex-wrap gap-small border-t pt-4">
             <button

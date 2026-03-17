@@ -2,6 +2,21 @@ let leadsData = [];
 let filteredLeads = []; // For search filtering
 let activeFilter = "all"; // Track active filter (all, pending, sent)
 
+// ================================================================
+// SEND OPERATION STATE MANAGER
+// Controls pause, stop, resume of bulk email sending
+// ================================================================
+let sendState = {
+  isRunning: false,      // Currently sending?
+  isPaused: false,       // Paused?
+  isStopped: false,      // User clicked stop?
+  currentIndex: 0,       // Which email are we on?
+  totalCount: 0,         // Total emails to send
+  sentCount: 0,          // Successfully sent
+  failedCount: 0,        // Failed sends
+  emailsToSend: [],      // Queue of emails
+};
+
 // Load leads and populate table
 async function loadLeads() {
   const table = document.getElementById("leads-table");
@@ -237,7 +252,78 @@ async function sendSingleEmail(email, channelName, button) {
   }
 }
 
-// Send all unsent emails - REALTIME VERSION (one by one)
+// ================================================================
+// SEND OPERATION CONTROL FUNCTIONS
+// Manage pause, stop, resume, and progress display
+// ================================================================
+
+function showSendControlPanel() {
+  const panel = document.getElementById("send-control-panel");
+  if (panel) panel.classList.remove("hidden");
+}
+
+function hideSendControlPanel() {
+  const panel = document.getElementById("send-control-panel");
+  if (panel) panel.classList.add("hidden");
+}
+
+function updateSendProgress() {
+  const percentage = sendState.totalCount > 0 
+    ? (sendState.currentIndex / sendState.totalCount) * 100 
+    : 0;
+  
+  const progressBar = document.getElementById("send-progress-bar");
+  if (progressBar) {
+    progressBar.style.width = `${percentage}%`;
+  }
+  
+  const currentCountEl = document.getElementById("send-current-count");
+  if (currentCountEl) currentCountEl.textContent = sendState.sentCount;
+  
+  const totalCountEl = document.getElementById("send-total-count");
+  if (totalCountEl) totalCountEl.textContent = sendState.totalCount;
+  
+  const failedCountEl = document.getElementById("send-failed-count");
+  if (failedCountEl) failedCountEl.textContent = sendState.failedCount;
+  
+  const statusText = document.getElementById("send-status-text");
+  if (statusText) {
+    if (sendState.isPaused) {
+      statusText.textContent = "⏸️ Paused - Click resume to continue";
+    } else if (sendState.isStopped) {
+      statusText.textContent = "⏹️ Stopped";
+    } else {
+      statusText.textContent = "Sending emails...";
+    }
+  }
+  
+  const pauseBtn = document.getElementById("pause-btn");
+  if (pauseBtn) {
+    pauseBtn.textContent = sendState.isPaused ? "▶️ Resume" : "⏸️ Pause";
+  }
+}
+
+function togglePauseSend() {
+  sendState.isPaused = !sendState.isPaused;
+  updateSendProgress();
+  
+  if (sendState.isPaused) {
+    showToast("Operation paused. Click Resume to continue.", "info");
+  } else {
+    showToast("Operation resumed.", "info");
+  }
+}
+
+function stopSend() {
+  const confirmed = confirm("Are you sure you want to stop sending? This will cancel the rest of the emails.");
+  if (confirmed) {
+    sendState.isStopped = true;
+    updateSendProgress();
+    showToast("Stopping email operation...", "warning");
+  }
+}
+
+// Send all unsent emails - WITH PAUSE/STOP/RESUME CONTROL
 async function sendAllEmails() {
   const btn = document.getElementById("send-all-btn");
   btn.textContent = "Sending...";
@@ -252,12 +338,48 @@ async function sendAllEmails() {
     return;
   }
 
-  let sentCount = 0;
+  // ✅ Initialize send state
+  sendState = {
+    isRunning: true,
+    isPaused: false,
+    isStopped: false,
+    currentIndex: 0,
+    totalCount: allLeads.length,
+    sentCount: 0,
+    failedCount: 0,
+    emailsToSend: allLeads,
+  };
+
+  // ✅ Show control panel
+  showSendControlPanel();
+  updateSendProgress();
   
   try {
-    // Send each email one by one with real-time logging
-    for (const lead of allLeads) {
+    // ✅ Loop through emails with pause/stop checks
+    for (let i = 0; i < allLeads.length; i++) {
+      const lead = allLeads[i];
+      sendState.currentIndex = i + 1;
+      
+      // ✅ CHECK 1: If user clicked stop, exit loop immediately
+      if (sendState.isStopped) {
+        showToast("Email sending stopped by user", "warning");
+        break;
+      }
+      
+      // ✅ CHECK 2: If paused, wait until resumed
+      while (sendState.isPaused && !sendState.isStopped) {
+        updateSendProgress();
+        await new Promise(resolve => setTimeout(resolve, 500)); // Check every 500ms
+      }
+      
+      // ✅ CHECK 3: If stopped while paused, exit
+      if (sendState.isStopped) {
+        showToast("Email sending stopped by user", "warning");
+        break;
+      }
+      
       try {
+        // Send the email
         const response = await fetch("/send-single", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -269,32 +391,51 @@ async function sendAllEmails() {
         const result = await response.json();
         
         if (result.success) {
-          addLog(lead.email, lead.channel_name, "success");  // ✅ LOG IMMEDIATELY
-          sentCount++;
+          addLog(lead.email, lead.channel_name, "success");
+          sendState.sentCount++;
         } else {
           addLog(lead.email, lead.channel_name, "error");
+          sendState.failedCount++;
         }
-        
-        // Small delay between emails (optional, prevents server overload)
-        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         console.error(`Error sending to ${lead.email}:`, error);
         addLog(lead.email, lead.channel_name, "error");
+        sendState.failedCount++;
       }
+      
+      // Update UI after each email
+      updateSendProgress();
+      
+      // Small delay between emails
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    showToast(`Sent ${sentCount} emails`, "success");
+    // ✅ Operation complete
+    if (sendState.isStopped) {
+      showToast(`Stopped at ${sendState.sentCount} emails sent`, "warning");
+    } else {
+      showToast(`Successfully sent ${sendState.sentCount} emails, ${sendState.failedCount} failed`, "success");
+    }
+    
     await loadProgress();
     await loadLeads();
   } catch (error) {
     showToast("Error in bulk send operation", "error");
+    console.error(error);
   } finally {
+    // ✅ Clean up
+    sendState.isRunning = false;
     btn.textContent = "Send All Unsent";
     btn.disabled = false;
+    
+    // Hide control panel after 3 seconds
+    setTimeout(() => {
+      hideSendControlPanel();
+    }, 3000);
   }
 }
 
-// Send selected emails - REALTIME VERSION (one by one)
+// Send selected emails - WITH PAUSE/STOP/RESUME CONTROL
 async function sendSelectedEmails() {
   const selected = Array.from(
     document.querySelectorAll(".lead-checkbox:checked"),
@@ -309,11 +450,46 @@ async function sendSelectedEmails() {
   btn.textContent = "Sending...";
   btn.disabled = true;
 
-  let sentCount = 0;
+  // ✅ Initialize send state
+  sendState = {
+    isRunning: true,
+    isPaused: false,
+    isStopped: false,
+    currentIndex: 0,
+    totalCount: selected.length,
+    sentCount: 0,
+    failedCount: 0,
+    emailsToSend: selected,
+  };
+
+  // ✅ Show control panel
+  showSendControlPanel();
+  updateSendProgress();
 
   try {
-    // Send each email one by one with real-time logging
-    for (const email of selected) {
+    // ✅ Send each email one by one with pause/stop checks
+    for (let i = 0; i < selected.length; i++) {
+      const email = selected[i];
+      sendState.currentIndex = i + 1;
+      
+      // ✅ CHECK 1: If user clicked stop, exit loop immediately
+      if (sendState.isStopped) {
+        showToast("Email sending stopped by user", "warning");
+        break;
+      }
+      
+      // ✅ CHECK 2: If paused, wait until resumed
+      while (sendState.isPaused && !sendState.isStopped) {
+        updateSendProgress();
+        await new Promise(resolve => setTimeout(resolve, 500)); // Check every 500ms
+      }
+      
+      // ✅ CHECK 3: If stopped while paused, exit
+      if (sendState.isStopped) {
+        showToast("Email sending stopped by user", "warning");
+        break;
+      }
+
       try {
         // Find the lead to get channel name
         const lead = leadsData.find((l) => l.email === email);
@@ -330,29 +506,43 @@ async function sendSelectedEmails() {
         const result = await response.json();
 
         if (result.success) {
-          addLog(email, lead.channel_name, "success");  // ✅ LOG IMMEDIATELY
-          sentCount++;
+          addLog(email, lead.channel_name, "success");
+          sendState.sentCount++;
         } else {
           addLog(email, lead.channel_name, "error");
+          sendState.failedCount++;
         }
-
-        // Small delay between emails (optional, prevents server overload)
-        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         console.error(`Error sending to ${email}:`, error);
         const lead = leadsData.find((l) => l.email === email);
         if (lead) {
           addLog(email, lead.channel_name, "error");
         }
+        sendState.failedCount++;
       }
+      
+      // Update UI after each email
+      updateSendProgress();
+
+      // Small delay between emails
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    showToast(`Sent ${sentCount} selected emails`, "success");
+    // ✅ Operation complete
+    if (sendState.isStopped) {
+      showToast(`Stopped at ${sendState.sentCount} emails sent`, "warning");
+    } else {
+      showToast(`Successfully sent ${sendState.sentCount} emails, ${sendState.failedCount} failed`, "success");
+    }
+    
     await loadProgress();
     await loadLeads();
   } catch (error) {
     showToast("Error in send operation", "error");
+    console.error(error);
   } finally {
+    // ✅ Clean up
+    sendState.isRunning = false;
     btn.innerHTML =
       '✓ Send Selected <span class="text-xs">(<span id="selected-count">0</span>)</span>';
     btn.onclick = function () {
@@ -360,6 +550,11 @@ async function sendSelectedEmails() {
     };
     updateSelectedCount();
     btn.disabled = false;
+    
+    // Hide control panel after 3 seconds
+    setTimeout(() => {
+      hideSendControlPanel();
+    }, 3000);
   }
 }
 
