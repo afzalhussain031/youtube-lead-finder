@@ -1,5 +1,6 @@
 let leadsData = [];
-let filteredLeads = [];  // For search filtering
+let filteredLeads = []; // For search filtering
+let activeFilter = "all"; // Track active filter (all, pending, sent)
 
 // Load leads and populate table
 async function loadLeads() {
@@ -13,8 +14,10 @@ async function loadLeads() {
   try {
     const response = await fetch("/api/leads");
     leadsData = await response.json();
-    filteredLeads = [...leadsData];  // Initialize filtered
-    renderTable();
+    filteredLeads = [...leadsData]; // Initialize filtered
+    activeFilter = "all"; // Reset to "All" when loading
+    updateFilterButtonUI(); // Update button styling
+    applyFilters(); // Apply filters and render
     table.classList.remove("hidden");
   } catch (error) {
     console.error("Error loading leads:", error);
@@ -26,7 +29,7 @@ async function loadLeads() {
   }
 }
 
-// Render table rows with Tailwind styling
+// Render table rows with clean component classes
 function renderTable() {
   const tbody = document.getElementById("lead-body");
   const empty = document.getElementById("empty-state");
@@ -41,51 +44,123 @@ function renderTable() {
   empty.classList.add("hidden");
   table.classList.remove("hidden");
 
-  filteredLeads.forEach((lead, index) => {
+  filteredLeads.forEach((lead) => {
     const row = document.createElement("tr");
     const isContacted = lead.contacted;
-    row.className = `hover:bg-gray-50 transition duration-150 ${isContacted ? 'opacity-60' : ''} ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`;  // Zebra and hover
+
+    row.className = "table-row";
     row.innerHTML = `
-      <td class="px-4 py-4 whitespace-nowrap">
-        <input type="checkbox" class="lead-checkbox accent-primary" data-email="${lead.email}" ${isContacted ? 'disabled' : ''}>
+      <td class="table-cell">
+        <input 
+          type="checkbox" 
+          class="lead-checkbox checkbox-custom" 
+          data-email="${lead.email}" 
+          ${isContacted ? "disabled" : ""}>
       </td>
-      <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${lead.email}</td>
-      <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${lead.channel_name}</td>
-      <td class="px-4 py-4 whitespace-nowrap">
-        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${isContacted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-          ${isContacted ? 'Contacted' : 'Pending'}
+      <td class="table-cell">${lead.email}</td>
+      <td class="table-cell">${lead.channel_name}</td>
+      <td class="table-cell">
+        <span class="${isContacted ? "badge-sent" : "badge-pending"}">
+          ${isContacted ? "✓ Sent" : "⏳ Pending"}
         </span>
       </td>
-      <td class="px-4 py-4 whitespace-nowrap">
+      <td class="table-cell text-center">
         <button
           data-email="${lead.email}"
           data-channel="${lead.channel_name}"
-          class="bg-primary text-white px-3 py-1 rounded hover:bg-blue-700 transition duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+          class="${isContacted ? "btn-secondary" : "btn-primary"} btn-sm"
           ${isContacted ? "disabled" : ""}>
           ${isContacted ? "Sent" : "Send"}
         </button>
       </td>
     `;
     tbody.appendChild(row);
-    const button = row.querySelector('button[data-email]');
-    if (button) {
-      button.addEventListener('click', function() {
+
+    const button = row.querySelector("button[data-email]");
+    if (button && !isContacted) {
+      button.addEventListener("click", function () {
         sendSingleEmail(this.dataset.email, this.dataset.channel, this);
       });
     }
   });
+
   updateSelectAll();
   updateSelectedCount();
 }
 
-// Search functionality
-document.getElementById("search-input").addEventListener("input", function () {
-  const query = this.value.toLowerCase();
-  filteredLeads = leadsData.filter(lead =>
-    lead.email.toLowerCase().includes(query) || lead.channel_name.toLowerCase().includes(query)
-  );
+// Combined filter function for search + status
+function applyFilters() {
+  const searchQuery = document
+    .getElementById("search-input")
+    .value.toLowerCase();
+
+  filteredLeads = leadsData.filter((lead) => {
+    // 1. Apply status filter
+    if (activeFilter === "pending" && lead.contacted) return false; // Hide contacted
+    if (activeFilter === "sent" && !lead.contacted) return false; // Hide pending
+    // activeFilter === "all" shows everything
+
+    // 2. Apply search filter
+    const matchesSearch =
+      lead.email.toLowerCase().includes(searchQuery) ||
+      lead.channel_name.toLowerCase().includes(searchQuery);
+
+    return matchesSearch;
+  });
+
   renderTable();
+}
+
+// Search functionality (now uses combined filter)
+document.getElementById("search-input").addEventListener("input", function () {
+  applyFilters();
 });
+
+// Filter button click handlers
+document.getElementById("filter-all").addEventListener("click", function () {
+  activeFilter = "all";
+  updateFilterButtonUI();
+  applyFilters();
+});
+
+document
+  .getElementById("filter-pending")
+  .addEventListener("click", function () {
+    activeFilter = "pending";
+    updateFilterButtonUI();
+    applyFilters();
+  });
+
+document.getElementById("filter-sent").addEventListener("click", function () {
+  activeFilter = "sent";
+  updateFilterButtonUI();
+  applyFilters();
+});
+
+// Update button styling to show which filter is active (using component classes)
+function updateFilterButtonUI() {
+  const allBtn = document.getElementById("filter-all");
+  const pendingBtn = document.getElementById("filter-pending");
+  const sentBtn = document.getElementById("filter-sent");
+
+  // Reset all buttons to inactive state
+  [allBtn, pendingBtn, sentBtn].forEach((btn) => {
+    btn.classList.remove("filter-tab-active");
+    btn.classList.add("filter-tab-inactive");
+  });
+
+  // Set active filter button with active component class
+  if (activeFilter === "all") {
+    allBtn.classList.remove("filter-tab-inactive");
+    allBtn.classList.add("filter-tab-active");
+  } else if (activeFilter === "pending") {
+    pendingBtn.classList.remove("filter-tab-inactive");
+    pendingBtn.classList.add("filter-tab-active");
+  } else if (activeFilter === "sent") {
+    sentBtn.classList.remove("filter-tab-inactive");
+    sentBtn.classList.add("filter-tab-active");
+  }
+}
 
 // Handle select-all checkbox
 document.getElementById("select-all").addEventListener("change", function () {
@@ -102,7 +177,9 @@ function updateSelectAll() {
 }
 
 function updateSelectedCount() {
-  const selected = document.querySelectorAll(".lead-checkbox:checked:not(:disabled)").length;
+  const selected = document.querySelectorAll(
+    ".lead-checkbox:checked:not(:disabled)",
+  ).length;
   document.getElementById("selected-count").textContent = selected;
 }
 
@@ -190,17 +267,33 @@ async function sendSelectedEmails() {
   }
 }
 
-// Show toast notification with Tailwind animations
+// Show toast notification using component classes (clean and maintainable)
 function showToast(message, type) {
   const container = document.getElementById("toast-container");
   const toast = document.createElement("div");
-  const colorClass = type === "success" ? "bg-green-500" : type === "error" ? "bg-red-500" : "bg-yellow-500";
-  toast.className = `text-white px-4 py-2 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 ${colorClass}`;
+
+  // Map type to toast component class
+  const typeClass =
+    type === "success"
+      ? "toast-success"
+      : type === "error"
+        ? "toast-error"
+        : type === "warning"
+          ? "toast-warning"
+          : "toast-info";
+
+  toast.className = `toast ${typeClass}`;
   toast.textContent = message;
+  toast.setAttribute("role", "alert");
+
   container.appendChild(toast);
-  setTimeout(() => toast.classList.remove("translate-x-full"), 100);  // Slide in
+
+  // Trigger animation
+  setTimeout(() => toast.classList.add("show"), 10);
+
+  // Remove after delay
   setTimeout(() => {
-    toast.classList.add("translate-x-full");
+    toast.classList.remove("show");
     setTimeout(() => container.removeChild(toast), 300);
   }, 3000);
 }

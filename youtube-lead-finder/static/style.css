@@ -1,2 +1,309 @@
-/* Minimal custom styles - Tailwind handles most styling */
-/* Add any overrides here if needed */
+/* ================================================================
+   COMPONENT-BASED STYLES FOR TAILWIND CDN
+   Pure CSS (no @apply or @tailwind directives - they don't work with CDN)
+   Maintains clean, reusable component classes with Tailwind values
+   ================================================================ */
+
+/* ================================================================
+   BUTTON COMPONENTS
+   ================================================================ */
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.btn-primary:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+  color: #9ca3af;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #4b5563;
+}
+
+.btn-secondary:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+  color: #9ca3af;
+}
+
+.btn-success {
+  background-color: #10b981;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* ================================================================
+   BADGE COMPONENTS
+   ================================================================ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-sent {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.badge-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+/* ================================================================
+   CARD COMPONENTS
+   ================================================================ */
+
+.card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* ================================================================
+   TABLE COMPONENTS
+   ================================================================ */
+
+.table-wrapper {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.table-header {
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table-row {
+  border-top: 1px solid #e5e7eb;
+  transition: background-color 0.15s;
+}
+
+.table-row:hover {
+  background-color: #f9fafb;
+}
+
+.table-cell {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+/* ================================================================
+   FORM COMPONENTS
+   ================================================================ */
+
+.input-field {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.input-field:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: #3b82f6;
+  border-color: transparent;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input-field::placeholder {
+  color: #9ca3af;
+}
+
+.checkbox-custom {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+/* ================================================================
+   TOAST NOTIFICATIONS
+   ================================================================ */
+
+.toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  color: white;
+  opacity: 0;
+  transform: translateX(400px);
+  transition: all 0.3s ease-out;
+  z-index: 50;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-success {
+  background-color: #10b981;
+}
+
+.toast-error {
+  background-color: #ef4444;
+}
+
+.toast-warning {
+  background-color: #f59e0b;
+}
+
+.toast-info {
+  background-color: #3b82f6;
+}
+
+/* ================================================================
+   FILTER TABS
+   ================================================================ */
+
+.filter-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.filter-tab-active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.filter-tab-inactive {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.filter-tab-inactive:hover {
+  background-color: #d1d5db;
+}
+
+/* ================================================================
+   STATE DISPLAYS
+   ================================================================ */
+
+.loading-spinner {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+}
+
+/* ================================================================
+   LAYOUT HELPERS
+   ================================================================ */
+
+.container-main {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1rem;
+}
+
+.gap-small {
+  gap: 0.5rem;
+}
+
+.gap-medium {
+  gap: 1rem;
+}
+
+.gap-large {
+  gap: 1.5rem;
+}

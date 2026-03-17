@@ -1,74 +1,135 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="YouTube Lead Finder - Manage and send personalized emails to YouTube channel leads" />
   <title>YouTube Lead Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#3b82f6',
-            secondary: '#6b7280',
-          },
-        },
-      },
-    };
-  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans">
-  <div class="max-w-7xl mx-auto p-4">
-    <!-- Header -->
+<body class="bg-gray-50 min-h-screen font-sans text-gray-900">
+  <div class="container-main">
+    <!-- ============================================================
+         HEADER SECTION
+         ============================================================ -->
     <header class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">YouTube Lead Dashboard</h1>
-      <p class="text-gray-600">Manage and send emails to your leads efficiently.</p>
+      <h1 class="text-4xl font-bold mb-2">📧 YouTube Lead Dashboard</h1>
+      <p class="text-gray-600 text-lg">Manage and send personalized emails to your leads efficiently.</p>
     </header>
 
-    <!-- Action Bar -->
-    <div class="bg-white shadow-sm rounded-lg p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div class="flex items-center gap-4">
-        <button id="send-all-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed">
-          Send All Unsent
-        </button>
-        <button id="send-selected-btn" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed">
-          Send Selected (<span id="selected-count">0</span>)
-        </button>
-      </div>
-      <input id="search-input" type="text" placeholder="Search by email or channel..." class="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-    </div>
+    <!-- ============================================================
+         CONTROLS SECTION
+         Buttons: Send All, Send Selected, Search, Filters
+         ============================================================ -->
+    <section class="card mb-6">
+      <div class="card-body">
+        <!-- Action Buttons & Search -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-medium mb-6">
+          <button id="send-all-btn" class="btn-primary" title="Send emails to all unsent leads">
+            ✉️ Send All Unsent
+          </button>
+          <button id="send-selected-btn" class="btn-secondary" title="Send emails to selected leads only">
+            ✓ Send Selected <span class="text-xs">(<span id="selected-count">0</span>)</span>
+          </button>
+          <input 
+            id="search-input" 
+            type="text" 
+            placeholder="Search by email or channel..." 
+            class="input-field flex-1"
+            aria-label="Search leads"
+          />
+        </div>
 
-    <!-- Leads Table -->
-    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-      <div id="loading-state" class="p-8 text-center text-gray-500 hidden">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-        Loading leads...
+        <!-- Filter Tabs -->
+        <div class="flex flex-wrap gap-small border-t pt-4">
+          <button 
+            id="filter-all" 
+            class="filter-tab filter-tab-active" 
+            data-filter="all"
+            title="Show all leads"
+          >
+            📋 All
+          </button>
+          <button 
+            id="filter-pending" 
+            class="filter-tab filter-tab-inactive" 
+            data-filter="pending"
+            title="Show unsent leads"
+          >
+            ⏳ Pending
+          </button>
+          <button 
+            id="filter-sent" 
+            class="filter-tab filter-tab-inactive" 
+            data-filter="sent"
+            title="Show sent leads"
+          >
+            ✅ Sent
+          </button>
+        </div>
       </div>
-      <div id="empty-state" class="p-8 text-center text-gray-500 hidden">
-        No leads found. Try adjusting your search.
+    </section>
+
+    <!-- ============================================================
+         LEADS TABLE SECTION
+         States: Loading, Empty, Table
+         ============================================================ -->
+    <section class="table-wrapper">
+      <!-- Loading State -->
+      <div id="loading-state" class="empty-state hidden">
+        <div class="loading-spinner mx-auto mb-3"></div>
+        <p>Loading leads...</p>
       </div>
-      <table id="leads-table" class="w-full table-auto hidden">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <input type="checkbox" id="select-all" class="accent-primary">
+
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state hidden">
+        <div class="empty-state-icon">📭</div>
+        <p>No leads found. Try adjusting your search filters.</p>
+      </div>
+
+      <!-- Leads Table -->
+      <table id="leads-table" class="w-full hidden">
+        <thead>
+          <tr class="bg-gray-50 border-b border-gray-200">
+            <!-- Checkbox Column -->
+            <th class="table-header w-10">
+              <input 
+                type="checkbox" 
+                id="select-all" 
+                class="checkbox-custom" 
+                title="Select all leads"
+                aria-label="Select all leads"
+              />
             </th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Channel</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+            <!-- Email Column -->
+            <th class="table-header">Email Address</th>
+            <!-- Channel Column -->
+            <th class="table-header">Channel Name</th>
+            <!-- Status Column -->
+            <th class="table-header">Status</th>
+            <!-- Action Column -->
+            <th class="table-header text-center">Action</th>
           </tr>
         </thead>
         <tbody id="lead-body" class="divide-y divide-gray-200">
-          <!-- Rows populated by JS -->
+          <!-- Table rows populated by JavaScript -->
         </tbody>
       </table>
-    </div>
+    </section>
   </div>
 
-  <!-- Toast Container -->
-  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
-</body>
+  <!-- ============================================================
+       TOAST NOTIFICATION CONTAINER
+       Toasts are dynamically added here by JavaScript
+       ============================================================ -->
+  <div 
+    id="toast-container" 
+    class="fixed top-4 right-4 z-50 space-y-2" 
+    role="status" 
+    aria-live="polite"
+    aria-relevant="additions"
+  ></div>
+  </body>
 </html>
