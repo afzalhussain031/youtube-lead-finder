@@ -39,4 +39,5 @@ class VideoSearch:
             return response
         except Exception as e:
             logger.error(f"Error searching channels for keyword '{keyword}' geo[{region}/{language}]: {e}")
-            return {}
+            # ✅ RE-RAISE the exception so the discovery service can catch it
+            raise

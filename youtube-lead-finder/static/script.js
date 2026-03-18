@@ -110,6 +110,164 @@ function closeCredsModal() {
   document.getElementById("creds-modal").classList.add("hidden");
 }
 
+// ================================================================
+// ERROR MODAL MANAGEMENT (NEW)
+// ================================================================
+
+function showErrorModal(errorData) {
+  const overlay = document.getElementById("error-modal-overlay");
+
+  if (!overlay) {
+    console.error("Error modal overlay not found in DOM");
+    return;
+  }
+
+  // Set title and error type badge - with null checks
+  const titleEl = document.getElementById("error-modal-title");
+  if (titleEl) {
+    titleEl.textContent = errorData.error_type || "Discovery Error";
+  }
+
+  const badgeEl = document.getElementById("error-type-badge");
+  if (badgeEl) {
+    badgeEl.textContent = errorData.error_type || "Error";
+  }
+
+  // Set main error message
+  const messageEl = document.getElementById("error-message");
+  if (messageEl) {
+    messageEl.textContent =
+      errorData.message || "An error occurred during discovery.";
+  }
+
+  // Populate solutions list
+  const solutionsList = document.getElementById("error-solutions");
+  if (solutionsList) {
+    solutionsList.innerHTML = "";
+    if (errorData.solutions && Array.isArray(errorData.solutions)) {
+      errorData.solutions.forEach((solution) => {
+        const li = document.createElement("li");
+        li.textContent = solution;
+        solutionsList.appendChild(li);
+      });
+    } else {
+      const li = document.createElement("li");
+      li.textContent = "Check the raw error details for more information";
+      solutionsList.appendChild(li);
+    }
+  }
+
+  // Show raw error for debugging (hidden by default in details)
+  const rawDetailsEl = document.getElementById("error-raw-details");
+  if (rawDetailsEl && errorData.raw_error) {
+    rawDetailsEl.textContent = errorData.raw_error;
+  }
+
+  // Show modal
+  overlay.classList.remove("hidden");
+  console.log("✅ Error modal opened with error type:", errorData.error_type);
+}
+
+function closeErrorModal() {
+  const overlay = document.getElementById("error-modal-overlay");
+  overlay.classList.add("hidden");
+}
+
+// ================================================================
+// KEYWORDS MANAGEMENT MODAL SYSTEM
+// Allow users to edit keywords directly from the UI
+// ================================================================
+
+function openKeywordsModal() {
+  const modal = document.getElementById("keywords-modal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    loadKeywords(); // Fetch and populate keywords
+  }
+}
+
+function closeKeywordsModal() {
+  const modal = document.getElementById("keywords-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+async function loadKeywords() {
+  try {
+    const response = await fetch("/api/keywords", { method: "GET" });
+    const data = await response.json();
+
+    if (data.success && data.keywords) {
+      const textarea = document.getElementById("keywords-textarea");
+      const countEl = document.getElementById("keywords-count");
+
+      if (textarea) {
+        // Join keywords with newlines for display
+        textarea.value = data.keywords.join("\n");
+      }
+
+      if (countEl) {
+        countEl.textContent = data.keywords.length;
+      }
+
+      console.log("✅ Keywords loaded:", data.keywords.length, "keywords");
+    } else {
+      console.error("❌ Failed to load keywords:", data.message);
+      showToast("Failed to load keywords", "error");
+    }
+  } catch (error) {
+    console.error("❌ Error loading keywords:", error);
+    showToast("Error loading keywords: " + error.message, "error");
+  }
+}
+
+async function saveKeywords() {
+  try {
+    const textarea = document.getElementById("keywords-textarea");
+    if (!textarea) {
+      console.error("❌ Keywords textarea not found");
+      return;
+    }
+
+    // Parse keywords from textarea (split by newline, filter empty lines)
+    const keywordsText = textarea.value.trim();
+    const keywords = keywordsText
+      .split("\n")
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0);
+
+    if (keywords.length === 0) {
+      showToast("Please enter at least one keyword", "warning");
+      return;
+    }
+
+    // Send to backend
+    const response = await fetch("/api/keywords", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keywords: keywords }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log("✅ Keywords saved successfully:", keywords.length);
+      showToast(
+        `✅ Saved ${keywords.length} keywords successfully!`,
+        "success",
+      );
+      closeKeywordsModal();
+    } else {
+      console.error("❌ Failed to save keywords:", data.message);
+      showToast("Failed to save keywords: " + data.message, "error");
+    }
+  } catch (error) {
+    console.error("❌ Error saving keywords:", error);
+    showToast("Error saving keywords: " + error.message, "error");
+  }
+}
+
 async function loadSavedCredentials() {
   try {
     const response = await fetch("/api/env");
@@ -195,6 +353,60 @@ async function fetchDiscoveryStatus() {
 function updateDiscoveryUI(status) {
   discoveryStatus = status;
 
+  // ✨ CHECK FOR ERRORS FIRST
+  if (status.error) {
+    console.log("🔴 Error detected in discovery status:", status.error_type);
+    console.log("Error details:", status.error_details);
+
+    // Show error modal with details
+    if (status.error_details) {
+      showErrorModal(status.error_details);
+    } else {
+      console.warn("Error flag set but no error_details provided");
+    }
+
+    // Update status indicator - with null check
+    const indicator = document.getElementById("discovery-indicator");
+    if (indicator) {
+      indicator.className = "w-3 h-3 bg-red-500 rounded-full";
+    }
+
+    // Update status text - with null check
+    const statusText = document.getElementById("discovery-status-text");
+    if (statusText) {
+      statusText.textContent = `Error: ${status.error_type || "Discovery failed"}`;
+    }
+
+    // Hide progress sections on error - with null checks
+    const progressSection = document.getElementById(
+      "discovery-progress-section",
+    );
+    if (progressSection) {
+      progressSection.classList.add("hidden");
+    }
+
+    const logsSection = document.getElementById("discovery-logs-section");
+    if (logsSection) {
+      logsSection.classList.add("hidden");
+    }
+
+    // Show start button, hide stop button - with null checks
+    const startBtn = document.getElementById("start-discovery-btn");
+    if (startBtn) {
+      startBtn.classList.remove("hidden");
+    }
+
+    const stopBtn = document.getElementById("stop-discovery-btn");
+    if (stopBtn) {
+      stopBtn.classList.add("hidden");
+    }
+
+    // Stop polling
+    stopDiscoveryStatusPolling();
+    return; // Exit early - don't update other UI elements
+  }
+
+  // ✅ No error - continue with normal update logic
   // Update status indicator
   const indicator = document.getElementById("discovery-indicator");
   const statusText = document.getElementById("discovery-status-text");
@@ -222,16 +434,9 @@ function updateDiscoveryUI(status) {
   } else {
     indicator.className = "w-3 h-3 bg-gray-400 rounded-full";
 
-    if (status.error) {
-      statusText.textContent = "Error occurred";
-      details.textContent = status.error;
-      indicator.className = "w-3 h-3 bg-red-500 rounded-full";
-      // Hide progress section on error
-      document
-        .getElementById("discovery-progress-section")
-        .classList.add("hidden");
-    } else if (status.current_step === "completed") {
-      statusText.textContent = "Discovery completed";
+    if (status.current_step === "completed") {
+      indicator.className = "w-3 h-3 bg-blue-500 rounded-full";
+      statusText.textContent = "✅ Discovery Completed";
       const added = status.new_leads_added || 0;
       const qualified = status.new_leads_qualified || 0;
       details.textContent = `Added ${added} leads, ${qualified} qualified - view analytics below`;
@@ -240,7 +445,6 @@ function updateDiscoveryUI(status) {
         "success",
       );
       // Keep progress section visible to show final analytics
-      // Do not hide it
 
       // Refresh campaign progress stats and leads list
       setTimeout(() => {
@@ -268,26 +472,46 @@ function updateDiscoveryUI(status) {
   const progressBar = document.getElementById("discovery-progress-bar");
   if (progressBar) progressBar.style.width = `${status.progress}%`;
 
-  // Update stats
-  document.getElementById("discovery-step").textContent =
-    status.current_step.replace("_", " ");
-  document.getElementById("discovery-percent").textContent =
-    `${status.progress}%`;
-  document.getElementById("new-channels-found").textContent =
-    status.new_channels_found || 0;
-  document.getElementById("new-channels-analyzed").textContent =
-    status.new_channels_analyzed || 0;
-  document.getElementById("new-leads-added").textContent =
-    status.new_leads_added || 0;
-  document.getElementById("new-leads-qualified").textContent =
-    status.new_leads_qualified || 0;
+  // Update stats - with null checks
+  const discoveryStep = document.getElementById("discovery-step");
+  if (discoveryStep) {
+    discoveryStep.textContent = status.current_step.replace("_", " ");
+  }
 
-  // Update elapsed time
+  const discoveryPercent = document.getElementById("discovery-percent");
+  if (discoveryPercent) {
+    discoveryPercent.textContent = `${status.progress}%`;
+  }
+
+  const newChannelsFound = document.getElementById("new-channels-found");
+  if (newChannelsFound) {
+    newChannelsFound.textContent = status.new_channels_found || 0;
+  }
+
+  const newChannelsAnalyzed = document.getElementById("new-channels-analyzed");
+  if (newChannelsAnalyzed) {
+    newChannelsAnalyzed.textContent = status.new_channels_analyzed || 0;
+  }
+
+  const newLeadsAdded = document.getElementById("new-leads-added");
+  if (newLeadsAdded) {
+    newLeadsAdded.textContent = status.new_leads_added || 0;
+  }
+
+  const newLeadsQualified = document.getElementById("new-leads-qualified");
+  if (newLeadsQualified) {
+    newLeadsQualified.textContent = status.new_leads_qualified || 0;
+  }
+
+  // Update elapsed time - with null check
   if (status.start_time) {
     const start = new Date(status.start_time);
     const now = new Date();
     const elapsed = Math.floor((now - start) / 1000);
-    document.getElementById("discovery-time").textContent = `${elapsed}s`;
+    const discoveryTime = document.getElementById("discovery-time");
+    if (discoveryTime) {
+      discoveryTime.textContent = `${elapsed}s`;
+    }
   }
 
   // Update logs

@@ -28,7 +28,9 @@ class DiscoveryService:
             'start_time': None,
             'logs': [],
             'can_stop': False,
-            'error': None
+            'error': None,
+            'error_type': None,
+            'error_details': None
         }
         self.thread = None
         self.should_stop = False
@@ -78,7 +80,9 @@ class DiscoveryService:
             'start_time': datetime.now().isoformat(),
             'logs': [],
             'can_stop': True,
-            'error': None
+            'error': None,
+            'error_type': None,
+            'error_details': None
         }
         self.should_stop = False
 
@@ -272,13 +276,90 @@ class DiscoveryService:
             self.add_log(f'Discovery completed! Generated {len(qualified_leads)} qualified leads')
 
         except Exception as e:
-            self.status['error'] = str(e)
-            self.status['current_step'] = 'error'
-            self.add_log(f'Error during discovery: {e}', 'error')
+            self._handle_discovery_error(e)
 
         finally:
             self.status['is_running'] = False
             self.status['can_stop'] = False
+
+    def _handle_discovery_error(self, error):
+        """Convert exception to user-friendly error message with solutions"""
+        error_str = str(error)
+        error_type = "Unknown Error"
+        error_message = error_str
+        solutions = []
+
+        # Categorize the error and provide solutions
+        if "403" in error_str:
+            error_type = "API Quota Exceeded"
+            error_message = "YouTube API returned 403 Forbidden. Your quota may be exceeded or API key is invalid."
+            solutions = [
+                "Check your YouTube API quota in Google Cloud Console",
+                "Wait 24 hours for your quota to reset",
+                "Upgrade to a paid API plan for higher limits",
+                "Reduce the number of keywords to search",
+                "Verify your API key is still valid"
+            ]
+        elif "401" in error_str:
+            error_type = "API Authentication Failed"
+            error_message = "Invalid or expired API key. Please reconfigure your credentials."
+            solutions = [
+                "Verify your YouTube API key in the credentials modal",
+                "Generate a new API key from Google Cloud Console",
+                "Ensure the API key has YouTube Data API v3 access enabled",
+                "Check that the API key restrictions are not too strict"
+            ]
+        elif "Connection" in error_str or "timeout" in error_str.lower():
+            error_type = "Network Error"
+            error_message = "Failed to connect to YouTube API. Network connectivity issue."
+            solutions = [
+                "Check your internet connection",
+                "Verify YouTube API is accessible from your network",
+                "Try again in a few moments",
+                "Check if there are firewall restrictions"
+            ]
+        elif "rate limit" in error_str.lower():
+            error_type = "Rate Limited"
+            error_message = "Too many requests to YouTube API. Please wait and try again."
+            solutions = [
+                "Wait a minute before retrying discovery",
+                "Reduce the number of simultaneous searches",
+                "Increase the delay between API requests in config"
+            ]
+        elif "email" in error_str.lower() or "gmail" in error_str.lower():
+            error_type = "Email Configuration Error"
+            error_message = "Issue with email credentials or SMTP configuration."
+            solutions = [
+                "Verify your Gmail credentials in the credentials modal",
+                "Ensure Gmail app-specific password is correct",
+                "Check that Gmail account has less secure apps enabled",
+                "Verify SMTP settings are correct"
+            ]
+        else:
+            error_type = "Discovery Error"
+            solutions = [
+                "Check the detailed error message below",
+                "Review the logs for more information",
+                "Try restarting the discovery",
+                "Contact support with the error details"
+            ]
+
+        # Update status with error info
+        self.status.update({
+            'is_running': False,
+            'current_step': 'error',
+            'error': True,
+            'error_type': error_type,
+            'error_details': {
+                'message': error_message,
+                'solutions': solutions,
+                'raw_error': error_str
+            }
+        })
+
+        # Log error
+        self.add_log(f'Discovery Error: {error_type}', 'error')
+        self.add_log(f'Details: {error_message}', 'error')
 
 # Global instance
 discovery_service = DiscoveryService()

@@ -228,3 +228,69 @@ def get_env_vars():
     except Exception as e:
         print(f"Error fetching credentials: {e}")
         return jsonify({"error": f"Failed to fetch credentials: {str(e)}"}), 500
+
+# ============================================================
+# KEYWORDS MANAGEMENT ROUTES
+# ============================================================
+
+@dashboard_bp.route("/api/keywords", methods=["GET"])
+def get_keywords():
+    """Fetch keywords from keywords.txt file"""
+    try:
+        keywords_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+            "data", 
+            "keywords.txt"
+        )
+        
+        keywords = []
+        if os.path.exists(keywords_file):
+            with open(keywords_file, 'r', encoding='utf-8') as f:
+                # Read all lines, strip whitespace, filter empty lines
+                keywords = [line.strip() for line in f if line.strip()]
+        
+        return jsonify({
+            "success": True,
+            "keywords": keywords,
+            "count": len(keywords)
+        })
+    
+    except Exception as e:
+        print(f"Error fetching keywords: {e}")
+        return jsonify({"error": f"Failed to fetch keywords: {str(e)}"}), 500
+
+@dashboard_bp.route("/api/keywords", methods=["POST"])
+def save_keywords():
+    """Save keywords to keywords.txt file"""
+    try:
+        data = request.get_json() or {}
+        keywords = data.get("keywords", [])
+        
+        # Validate input
+        if not isinstance(keywords, list):
+            return jsonify({"error": "Keywords must be a list"}), 400
+        
+        # Filter out empty strings and strip whitespace
+        keywords = [kw.strip() for kw in keywords if kw.strip()]
+        
+        # Get path to keywords.txt
+        keywords_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+            "data", 
+            "keywords.txt"
+        )
+        
+        # Write keywords to file (one per line)
+        with open(keywords_file, 'w', encoding='utf-8') as f:
+            for keyword in keywords:
+                f.write(f"{keyword}\n")
+        
+        return jsonify({
+            "success": True,
+            "message": f"Saved {len(keywords)} keywords successfully",
+            "count": len(keywords)
+        })
+    
+    except Exception as e:
+        print(f"Error saving keywords: {e}")
+        return jsonify({"error": f"Failed to save keywords: {str(e)}"}), 500

@@ -130,6 +130,13 @@
             >
               🔑 Configure Credentials
             </button>
+            <button
+              id="keywords-btn"
+              class="btn-secondary"
+              onclick="openKeywordsModal()"
+            >
+              🔑 Manage Keywords
+            </button>
           </div>
 
           <!-- Discovery Logs -->
@@ -632,6 +639,140 @@
             Save & Start
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         KEYWORDS MANAGEMENT MODAL (NEW)
+         Allows editing keywords directly from the UI
+         ============================================================ -->
+    <div
+      id="keywords-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+    >
+      <div class="bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+        <h3 class="text-lg font-semibold mb-4">
+          🔑 Manage Search Keywords
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Enter keywords one per line. These keywords will be used when you run discovery.
+        </p>
+
+        <!-- Keywords Textarea -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Keywords</label>
+          <textarea
+            id="keywords-textarea"
+            class="w-full p-3 border border-gray-300 rounded font-mono text-sm h-64"
+            placeholder="gaming&#10;tech review&#10;product review&#10;gadget review"
+          ></textarea>
+        </div>
+
+        <!-- Keywords Count -->
+        <div class="mb-4 text-sm text-gray-600">
+          <span id="keywords-count">0</span> keywords loaded
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 justify-end">
+          <button class="btn-secondary" onclick="closeKeywordsModal()">
+            Cancel
+          </button>
+          <button class="btn-primary" onclick="saveKeywords()">
+            💾 Save Keywords
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ERROR MODAL (NEW)
+         Displays detailed error information with solutions
+         ============================================================ -->
+    <div
+      id="error-modal-overlay"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <!-- Header -->
+        <div class="flex items-center gap-3 mb-4">
+          <div class="text-3xl">❌</div>
+          <h2 id="error-modal-title" class="text-xl font-bold text-gray-900">
+            Discovery Error
+          </h2>
+        </div>
+
+        <!-- Error Type Badge -->
+        <div
+          id="error-type-badge"
+          class="inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium mb-4"
+        >
+          Error Type
+        </div>
+
+        <!-- Error Message -->
+        <div
+          id="error-message"
+          class="bg-red-50 border border-red-200 rounded p-3 mb-4 text-sm text-gray-700"
+        >
+          Error message will appear here
+        </div>
+
+        <!-- Solutions Section -->
+        <div class="mb-4">
+          <h3 class="font-semibold text-gray-900 mb-2">💡 What you can try:</h3>
+          <ul
+            id="error-solutions"
+            class="list-disc list-inside space-y-1 text-sm text-gray-700"
+          >
+            <!-- Solutions will be populated dynamically -->
+          </ul>
+        </div>
+
+        <!-- Raw Error (for debugging) -->
+        <details class="mb-4">
+          <summary
+            class="text-xs text-gray-500 cursor-pointer hover:text-gray-700"
+          >
+            Show raw error details
+          </summary>
+          <pre
+            id="error-raw-details"
+            class="mt-2 bg-gray-100 p-2 rounded text-xs overflow-auto max-h-32 text-gray-700"
+          ></pre>
+        </details>
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+          <button
+            id="error-retry-btn"
+            class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition"
+            onclick="
+              closeErrorModal();
+              startDiscovery();
+            "
+          >
+            🔄 Retry Discovery
+          </button>
+          <button
+            id="error-close-btn"
+            class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded font-medium transition"
+            onclick="closeErrorModal()"
+          >
+            Close
+          </button>
+        </div>
+
+        <!-- Link to credentials -->
+        <button
+          class="w-full mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+          onclick="
+            closeErrorModal();
+            openCredsModal();
+          "
+        >
+          ⚙️ Update API Credentials
+        </button>
       </div>
     </div>
   </body>
