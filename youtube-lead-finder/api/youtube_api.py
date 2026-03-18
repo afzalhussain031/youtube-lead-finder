@@ -6,10 +6,21 @@ from utils.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
 
+# Shared rate limiter instance (used across the app)
+shared_rate_limiter = RateLimiter()
+
 class YouTubeAPI:
     def __init__(self):
         self.base_url = "https://www.googleapis.com/youtube/v3"
-        self.rate_limiter = RateLimiter()
+        self.rate_limiter = shared_rate_limiter
+
+    def get_quota_status(self):
+        """Get current quota usage/remaining info."""
+        return self.rate_limiter.get_quota_status()
+
+    def reset_quota(self):
+        """Reset quota tracking (manual reset)."""
+        self.rate_limiter.reset_quota()
     
     def _get_api_key(self):
         """Get API key at runtime, allowing for dynamic updates."""

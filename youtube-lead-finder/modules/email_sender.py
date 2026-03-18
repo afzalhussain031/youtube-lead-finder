@@ -5,6 +5,11 @@ import csv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+import sys
+
+# Add services directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from services.template_service import TemplateService
 
 # Load environment variables from a .env file (create one in the project root)
 load_dotenv()
@@ -13,23 +18,6 @@ load_dotenv()
 def get_gmail_credentials():
     """Get Gmail credentials at runtime, allowing for dynamic updates."""
     return os.getenv('GMAIL_USER'), os.getenv('GMAIL_APP_PASSWORD')
-
-# Email template (customize as needed)
-SUBJECT_TEMPLATE = "Collaboration Opportunity:  Video Editing Services for {channel_name}"
-BODY_TEMPLATE = """
-Hi {channel_name} Team,
-
-I hope this email finds you well. I'm reaching out because I admire your content on YouTube and believe we could collaborate on video editing work.
-
-As a professional editor, I specialize in enhancing videos to boost engagement. If you're interested in outsourcing editing for your channel, I'd love to discuss how I can help.
-
-Please let me know if you'd like to chat further!
-
-Best regards, 
-[Your Name]
-[Your Contact Info]
-[Your website/Portfolio, if any]
-"""
 
 def load_sent_emails():
     """Reads sent_log.csv and returns a set of already contacted emails."""
@@ -53,7 +41,7 @@ def save_sent_email(email):
         file.write(email + '\n')
 
 def send_personalized_email(to_email, channel_name):
-    """Senda personalized email to a single recipient."""
+    """Send a personalized email to a single recipient using dynamic templates."""
     try:
         # Get credentials at runtime
         gmail_user, gmail_password = get_gmail_credentials()
@@ -62,14 +50,21 @@ def send_personalized_email(to_email, channel_name):
             print(f"Error: Gmail credentials not configured")
             return False
         
+        # Get a random template and personalize it
+        template = TemplateService.get_random_template()
+        if not template:
+            print(f"Error: No templates found")
+            return False
+        
+        personalized = TemplateService.personalize_template(template, channel_name)
+        
         # Set up the email
         msg = MIMEMultipart()
         msg['From'] = gmail_user
         msg['To'] = to_email
-        msg['Subject'] = SUBJECT_TEMPLATE.format(channel_name=channel_name)
+        msg['Subject'] = personalized['subject']
 
-        body = BODY_TEMPLATE.format(channel_name=channel_name)
-        msg.attach(MIMEText(body, 'plain'))
+        msg.attach(MIMEText(personalized['body'], 'plain'))
 
         # Connect to Gmail SMTP
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -80,7 +75,7 @@ def send_personalized_email(to_email, channel_name):
         server.sendmail(gmail_user, to_email, msg.as_string())
         server.quit()
 
-        print(f"Email sent successfully to {to_email} for {channel_name}")
+        print(f"Email sent successfully to {to_email} for {channel_name} [Template: {personalized['template_name']}]")
         return True
     except Exception as e:
         print(f"Failed to send email to {to_email}: {str(e)}")

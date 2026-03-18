@@ -171,17 +171,25 @@ class DatabaseManager:
             else:
                 conn.execute('DELETE FROM search_state')
 
-    def get_last_cache_reset(self):
-        """Get the timestamp of the last cache reset."""
+    def get_metadata(self, key):
+        """Get a metadata value by key."""
         with self._get_connection() as conn:
-            cursor = conn.execute("SELECT value FROM metadata WHERE key = 'last_cache_reset'")
+            cursor = conn.execute('SELECT value FROM metadata WHERE key = ?', (key,))
             row = cursor.fetchone()
             return row[0] if row else None
+
+    def set_metadata(self, key, value):
+        """Set a metadata key/value pair."""
+        with self._get_connection() as conn:
+            conn.execute('INSERT OR REPLACE INTO metadata(key, value) VALUES(?, ?)', (key, value))
+
+    def get_last_cache_reset(self):
+        """Get the timestamp of the last cache reset."""
+        return self.get_metadata('last_cache_reset')
 
     def set_last_cache_reset(self, timestamp=None):
         """Update the last cache reset timestamp."""
         if timestamp is None:
             timestamp = datetime.now().isoformat()
-        with self._get_connection() as conn:
-            conn.execute("INSERT OR REPLACE INTO metadata(key, value) VALUES('last_cache_reset', ?)", (timestamp,))
+        self.set_metadata('last_cache_reset', timestamp)
 

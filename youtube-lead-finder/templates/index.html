@@ -50,6 +50,30 @@
             </div>
           </div>
 
+          <!-- Quota Usage -->
+          <div id="quota-section" class="mb-4 p-4 bg-white rounded border">
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-sm font-medium">YouTube API Quota</div>
+              <button
+                id="quota-reset-btn"
+                class="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition"
+                onclick="resetQuota()"
+              >
+                Reset Quota
+              </button>
+            </div>
+            <div class="text-xs text-gray-600 mb-2" id="quota-details">
+              Loading quota status...
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div
+                id="quota-progress-bar"
+                class="bg-indigo-500 h-2 rounded-full transition-all"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+
           <!-- Discovery Progress (shown when running) -->
           <div id="discovery-progress-section" class="hidden mb-4">
             <div class="mb-2">
@@ -129,6 +153,13 @@
               onclick="openCredsModal()"
             >
               🔑 Configure Credentials
+            </button>
+            <button
+              id="templates-btn"
+              class="btn-secondary"
+              onclick="openTemplatesModal()"
+            >
+              📧 Manage Email Templates
             </button>
             <button
               id="keywords-btn"
@@ -637,6 +668,270 @@
           </button>
           <button class="btn-primary" onclick="saveDiscoveryConfig()">
             Save & Start
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         EMAIL TEMPLATES MANAGEMENT MODAL (NEW)
+         Manage email templates with variations
+         ============================================================ -->
+    <div
+      id="templates-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
+        <h3 class="text-lg font-semibold mb-4">📧 Manage Email Templates</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Create and manage email templates with variations. Each variation
+          separated by | will be randomly selected.
+        </p>
+
+        <!-- Templates List -->
+        <div
+          id="templates-list"
+          class="space-y-4 mb-6 max-h-64 overflow-y-auto"
+        ></div>
+
+        <!-- Add New Template Button -->
+        <div class="mb-4">
+          <button class="btn-primary text-sm" onclick="toggleTemplateForm()">
+            ➕ Add New Template
+          </button>
+        </div>
+
+        <!-- Template Form (Hidden by default) -->
+        <div id="template-form" class="hidden border-t pt-4">
+          <h4 class="font-semibold mb-3">Create New Template</h4>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium mb-1">Template Name</label>
+            <input
+              id="template-name-input"
+              type="text"
+              class="w-full p-2 border border-gray-300 rounded text-sm"
+              placeholder="e.g., Video Editing Offer"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium mb-1"
+              >Subject (variations separated by |)</label
+            >
+            <input
+              id="template-subject-input"
+              type="text"
+              class="w-full p-2 border border-gray-300 rounded text-sm font-mono"
+              placeholder="Collaboration: {channel_name}|Quick Question"
+            />
+            <div class="text-xs text-gray-500 mt-1">
+              Use {channel_name} as placeholder. Use | to create variations.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium mb-1"
+              >Body (variations separated by |)</label
+            >
+            <textarea
+              id="template-body-input"
+              class="w-full p-2 border border-gray-300 rounded text-sm font-mono h-32"
+              placeholder="Hi|Hello|Greetings,&#10;...your message here...&#10;Use | for variations"
+            ></textarea>
+            <div class="text-xs text-gray-500 mt-1">
+              Use {channel_name} as placeholder. Separate variations with |.
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button class="btn-primary text-sm" onclick="saveNewTemplate()">
+              💾 Save Template
+            </button>
+            <button
+              class="btn-secondary text-sm"
+              onclick="toggleTemplateForm()"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- Close Button -->
+        <div class="flex justify-end mt-6 border-t pt-4">
+          <button class="btn-secondary" onclick="closeTemplatesModal()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         EDIT TEMPLATE MODAL (NEW)
+         Full-featured editor for existing templates
+         ============================================================ -->
+    <div
+      id="edit-template-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
+        <h3 class="text-lg font-semibold mb-4">✏️ Edit Template</h3>
+
+        <div class="grid grid-cols-2 gap-6">
+          <!-- Left Side: Edit Form -->
+          <div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium mb-2"
+                >Template Name</label
+              >
+              <input
+                id="edit-template-name"
+                type="text"
+                class="w-full p-2 border border-gray-300 rounded text-sm"
+                placeholder="e.g., Video Editing Offer"
+              />
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-sm font-medium mb-2"
+                >Subject (variations separated by |)</label
+              >
+              <textarea
+                id="edit-template-subject"
+                class="w-full p-2 border border-gray-300 rounded text-sm font-mono h-20"
+              ></textarea>
+              <div class="text-xs text-gray-500 mt-1">
+                Use {channel_name} as placeholder. Separate variations with |.
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-sm font-medium mb-2"
+                >Body (variations separated by |)</label
+              >
+              <textarea
+                id="edit-template-body"
+                class="w-full p-2 border border-gray-300 rounded text-sm font-mono h-32"
+              ></textarea>
+              <div class="text-xs text-gray-500 mt-1">
+                Use {channel_name} as placeholder. Separate variations with |.
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="flex items-center text-sm">
+                <input
+                  id="edit-template-active"
+                  type="checkbox"
+                  class="w-4 h-4 mr-2"
+                  checked
+                />
+                <span>Active (will be used for sending emails)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Right Side: Live Preview -->
+          <div>
+            <div class="bg-gray-100 p-4 rounded border border-gray-300">
+              <h4 class="font-semibold mb-3">📋 Live Preview</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-600 uppercase"
+                    >Subject</label
+                  >
+                  <div
+                    id="edit-preview-subject"
+                    class="p-3 bg-white border border-gray-200 rounded text-sm mt-1 font-mono break-words"
+                  >
+                    (preview will update as you type)
+                  </div>
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-600 uppercase"
+                    >Body Preview</label
+                  >
+                  <div
+                    id="edit-preview-body"
+                    class="p-3 bg-white border border-gray-200 rounded text-sm mt-1 font-mono h-32 overflow-y-auto whitespace-pre-wrap break-words"
+                  >
+                    (preview will update as you type)
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800"
+              >
+                ℹ️ <strong>Tip:</strong> Subject and body will be previewed with
+                {channel_name} replaced with "Sample Channel"
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-2 justify-end mt-6 border-t pt-4">
+          <button class="btn-secondary" onclick="closeEditTemplateModal()">
+            Cancel
+          </button>
+          <button class="btn-primary" onclick="saveEditedTemplate()">
+            💾 Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         DELETE TEMPLATE CONFIRMATION MODAL (NEW)
+         Confirm before deleting a template
+         ============================================================ -->
+    <div
+      id="delete-template-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+    >
+      <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <div class="flex items-start mb-4">
+          <div class="flex-shrink-0">
+            <div
+              class="flex items-center justify-center h-12 w-12 rounded-full bg-red-100"
+            >
+              <span class="text-xl">⚠️</span>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-900">
+              Delete Template?
+            </h3>
+            <p class="text-sm text-gray-600 mt-1">
+              Are you sure you want to delete the template "<span
+                id="delete-template-name"
+                class="font-semibold"
+              ></span
+              >"?
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-red-50 border border-red-200 rounded p-3 mb-6">
+          <p class="text-sm text-red-800">
+            ⚠️ <strong>This action cannot be undone.</strong> Emails already
+            sent using this template will not be affected, but new emails will
+            not use this template.
+          </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-2 justify-end">
+          <button class="btn-secondary" onclick="closeDeleteTemplateModal()">
+            Cancel
+          </button>
+          <button class="btn-danger text-sm" onclick="confirmDeleteTemplate()">
+            🗑️ Delete Template
           </button>
         </div>
       </div>

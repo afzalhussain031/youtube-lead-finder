@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, jsonify
 from services.lead_services import load_leads
 from services.email_services import send_personalized_email, load_sent_emails, save_sent_email
 from services.discovery_service import discovery_service  # NEW
+from services.template_service import TemplateService  # NEW
+from api.youtube_api import YouTubeAPI
 import os
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -230,6 +232,33 @@ def get_env_vars():
         return jsonify({"error": f"Failed to fetch credentials: {str(e)}"}), 500
 
 # ============================================================
+# QUOTA / RATE LIMITING ROUTES
+# ============================================================
+
+@dashboard_bp.route("/api/quota", methods=["GET"])
+def get_quota():
+    """Return YouTube API quota usage status."""
+    try:
+        api = YouTubeAPI()
+        return jsonify({"success": True, "quota": api.get_quota_status()})
+    except Exception as e:
+        print(f"Error fetching quota status: {e}")
+        return jsonify({"error": f"Failed to fetch quota status: {str(e)}"}), 500
+
+
+@dashboard_bp.route("/api/quota/reset", methods=["POST"])
+def reset_quota():
+    """Reset the quota usage tracking (manual override)."""
+    try:
+        api = YouTubeAPI()
+        api.reset_quota()
+        return jsonify({"success": True, "message": "Quota reset successfully", "quota": api.get_quota_status()})
+    except Exception as e:
+        print(f"Error resetting quota: {e}")
+        return jsonify({"error": f"Failed to reset quota: {str(e)}"}), 500
+
+
+# ============================================================
 # KEYWORDS MANAGEMENT ROUTES
 # ============================================================
 
@@ -294,3 +323,135 @@ def save_keywords():
     except Exception as e:
         print(f"Error saving keywords: {e}")
         return jsonify({"error": f"Failed to save keywords: {str(e)}"}), 500
+
+
+# ============================================================
+# EMAIL TEMPLATE MANAGEMENT ROUTES (NEW)
+# Allow users to manage email templates with variations
+# ============================================================
+
+@dashboard_bp.route("/api/templates", methods=["GET"])
+def get_templates():
+    """Fetch all email templates for UI display."""
+    try:
+        templates = TemplateService.get_all_templates_for_ui()
+        return jsonify({
+            "success": True,
+            "templates": templates,
+            "count": len(templates)
+        })
+    except Exception as e:
+        print(f"Error fetching templates: {e}")
+        return jsonify({"error": f"Failed to fetch templates: {str(e)}"}), 500
+
+
+@dashboard_bp.route("/api/templates/<int:template_id>", methods=["GET"])
+def get_template(template_id):
+    """Fetch a specific template by ID."""
+    try:
+        template = TemplateService.get_template_by_id(template_id)
+        if not template:
+            return jsonify({"error": "Template not found"}), 404
+        
+        return jsonify({
+            "success": True,
+            "template": template
+        })
+    except Exception as e:
+        print(f"Error fetching template: {e}")
+        return jsonify({"error": f"Failed to fetch template: {str(e)}"}), 500
+
+
+@dashboard_bp.route("/api/templates", methods=["POST"])
+def add_template():
+    """Add a new email template."""
+    try:
+        data = request.get_json() or {}
+        name = data.get("name", "").strip()
+        subject = data.get("subject", "").strip()
+        body = data.get("body", "").strip()
+        
+        if not name or not subject or not body:
+            return jsonify({"error": "Name, subject, and body are required"}), 400
+        
+        success = TemplateService.add_template(name, subject, body)
+        if success:
+            return jsonify({
+                "success": True,
+                "message": "Template added successfully"
+            })
+        else:
+            return jsonify({"error": "Failed to save template"}), 500
+    
+    except Exception as e:
+        print(f"Error adding template: {e}")
+        return jsonify({"error": f"Failed to add template: {str(e)}"}), 500
+
+
+@dashboard_bp.route("/api/templates/<int:template_id>", methods=["PUT"])
+def update_template(template_id):
+    """Update an existing template."""
+    try:
+        data = request.get_json() or {}
+        name = data.get("name", "").strip()
+        subject = data.get("subject", "").strip()
+        body = data.get("body", "").strip()
+        active = data.get("active", True)
+        
+        if not name or not subject or not body:
+            return jsonify({"error": "Name, subject, and body are required"}), 400
+        
+        success = TemplateService.update_template(template_id, name, subject, body, active)
+        if success:
+            return jsonify({
+                "success": True,
+                "message": "Template updated successfully"
+            })
+        else:
+            return jsonify({"error": "Failed to update template"}), 500
+    
+    except Exception as e:
+        print(f"Error updating template: {e}")
+        return jsonify({"error": f"Failed to update template: {str(e)}"}), 500
+
+
+@dashboard_bp.route("/api/templates/<int:template_id>", methods=["DELETE"])
+def delete_template(template_id):
+    """Delete a template."""
+    try:
+        success = TemplateService.delete_template(template_id)
+        if success:
+            return jsonify({
+                "success": True,
+                "message": "Template deleted successfully"
+            })
+        else:
+            return jsonify({"error": "Failed to delete template"}), 500
+    
+    except Exception as e:
+        print(f"Error deleting template: {e}")
+        return jsonify({"error": f"Failed to delete template: {str(e)}"}), 500
+
+
+@dashboard_bp.route("/api/templates/<int:template_id>/preview", methods=["GET"])
+def preview_template(template_id):
+    """Get a preview of a template with sample variations."""
+    try:
+        template = TemplateService.get_template_by_id(template_id)
+        if not template:
+            return jsonify({"error": "Template not found"}), 404
+        
+        # Create a preview by personalizing with sample data
+        preview = TemplateService.personalize_template(
+            template, 
+            channel_name="Sample Channel"
+        )
+        
+        return jsonify({
+            "success": True,
+            "preview": preview
+        })
+    
+    except Exception as e:
+        print(f"Error previewing template: {e}")
+        return jsonify({"error": f"Failed to preview template: {str(e)}"}), 500

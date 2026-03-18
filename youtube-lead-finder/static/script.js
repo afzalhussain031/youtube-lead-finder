@@ -268,6 +268,374 @@ async function saveKeywords() {
   }
 }
 
+// ================================================================
+// EMAIL TEMPLATES MANAGEMENT MODAL SYSTEM
+// Allow users to create and manage email templates with variations
+// ================================================================
+
+function openTemplatesModal() {
+  const modal = document.getElementById("templates-modal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    loadTemplates(); // Fetch and display templates
+  }
+}
+
+function closeTemplatesModal() {
+  const modal = document.getElementById("templates-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+  // Hide form if open
+  const form = document.getElementById("template-form");
+  if (form) {
+    form.classList.add("hidden");
+  }
+}
+
+function toggleTemplateForm() {
+  const form = document.getElementById("template-form");
+  if (form) {
+    form.classList.toggle("hidden");
+    // Clear form when toggling
+    if (!form.classList.contains("hidden")) {
+      document.getElementById("template-name-input").value = "";
+      document.getElementById("template-subject-input").value = "";
+      document.getElementById("template-body-input").value = "";
+    }
+  }
+}
+
+async function loadTemplates() {
+  try {
+    const response = await fetch("/api/templates", { method: "GET" });
+    const data = await response.json();
+
+    if (data.success && data.templates) {
+      const listContainer = document.getElementById("templates-list");
+      if (!listContainer) return;
+
+      listContainer.innerHTML = ""; // Clear existing
+
+      data.templates.forEach((template) => {
+        const templateEl = document.createElement("div");
+        templateEl.className =
+          "border rounded p-4 bg-gray-50 hover:bg-gray-100 transition cursor-pointer";
+
+        templateEl.innerHTML = `
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex-1 cursor-pointer" onclick="openEditTemplateModal(${template.id})">
+              <h4 class="font-semibold hover:text-blue-600">${escapeHtml(template.name)}</h4>
+              <div class="text-xs text-gray-600 mt-1">
+                <div><strong>Subject Preview:</strong> ${escapeHtml(template.preview_subject)}</div>
+              </div>
+              <div class="text-xs text-gray-500 mt-2">
+                <span class="italic">👆 Click to edit template details</span>
+              </div>
+            </div>
+            <div class="flex gap-2 ml-4">
+              <button
+                class="text-xs px-2 py-1 ${template.active ? "bg-green-200 text-green-800" : "bg-gray-300 text-gray-700"} rounded hover:opacity-75"
+                onclick="toggleTemplateActive(${template.id}, ${!template.active})"
+                title="${template.active ? "Click to deactivate" : "Click to activate"}"
+              >
+                ${template.active ? "✓ Active" : "✗ Inactive"}
+              </button>
+              <button
+                class="text-xs px-2 py-1 bg-red-200 text-red-800 rounded hover:bg-red-300"
+                onclick="deleteTemplate(${template.id}, '${escapeHtml(template.name).replace(/'/g, "&apos;")}')"
+                title="Delete this template"
+              >
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        `;
+
+        listContainer.appendChild(templateEl);
+      });
+
+      console.log("✅ Templates loaded:", data.templates.length, "templates");
+    } else {
+      console.error("❌ Failed to load templates:", data.message);
+      showToast("Failed to load templates", "error");
+    }
+  } catch (error) {
+    console.error("❌ Error loading templates:", error);
+    showToast("Error loading templates: " + error.message, "error");
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function saveNewTemplate() {
+  try {
+    const name = document.getElementById("template-name-input").value.trim();
+    const subject = document
+      .getElementById("template-subject-input")
+      .value.trim();
+    const body = document.getElementById("template-body-input").value.trim();
+
+    if (!name || !subject || !body) {
+      showToast("All fields are required", "warning");
+      return;
+    }
+
+    const response = await fetch("/api/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, subject, body }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log("✅ Template saved successfully");
+      showToast("✅ Template created successfully!", "success");
+      toggleTemplateForm(); // Hide form
+      loadTemplates(); // Reload list
+    } else {
+      console.error("❌ Failed to save template:", data.error);
+      showToast("Failed to save template: " + data.error, "error");
+    }
+  } catch (error) {
+    console.error("❌ Error saving template:", error);
+    showToast("Error saving template: " + error.message, "error");
+  }
+}
+
+// ================================================================
+// EDIT TEMPLATE MODAL SYSTEM
+// ================================================================
+
+function openEditTemplateModal(templateId) {
+  const modal = document.getElementById("edit-template-modal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    loadTemplateForEditing(templateId);
+  }
+}
+
+function closeEditTemplateModal() {
+  const modal = document.getElementById("edit-template-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+async function loadTemplateForEditing(templateId) {
+  try {
+    const response = await fetch(`/api/templates/${templateId}`);
+    const data = await response.json();
+
+    if (data.success && data.template) {
+      const template = data.template;
+
+      // Store template ID for later use
+      document.getElementById("edit-template-modal").dataset.templateId =
+        templateId;
+
+      // Fill form fields
+      document.getElementById("edit-template-name").value = template.name || "";
+      document.getElementById("edit-template-subject").value =
+        template.subject || "";
+      document.getElementById("edit-template-body").value = template.body || "";
+      document.getElementById("edit-template-active").checked =
+        template.active !== false;
+
+      // Add event listeners for live preview
+      document
+        .getElementById("edit-template-subject")
+        .addEventListener("input", updateEditPreview);
+      document
+        .getElementById("edit-template-body")
+        .addEventListener("input", updateEditPreview);
+      document
+        .getElementById("edit-template-name")
+        .addEventListener("input", updateEditPreview);
+
+      // Update preview
+      updateEditPreview();
+
+      console.log("✅ Template loaded for editing:", template.id);
+    } else {
+      console.error("❌ Failed to load template:", data.error);
+      showToast("Failed to load template", "error");
+      closeEditTemplateModal();
+    }
+  } catch (error) {
+    console.error("❌ Error loading template:", error);
+    showToast("Error loading template: " + error.message, "error");
+    closeEditTemplateModal();
+  }
+}
+
+function updateEditPreview() {
+  const subject = document.getElementById("edit-template-subject").value;
+  const body = document.getElementById("edit-template-body").value;
+
+  // Replace {channel_name} with sample value for preview
+  const previewSubject = subject.replace(/{channel_name}/g, "Sample Channel");
+  const previewBody = body.replace(/{channel_name}/g, "Sample Channel");
+
+  // Update preview elements
+  const previewSubjectEl = document.getElementById("edit-preview-subject");
+  const previewBodyEl = document.getElementById("edit-preview-body");
+
+  if (previewSubjectEl) {
+    previewSubjectEl.textContent = previewSubject || "(empty)";
+  }
+
+  if (previewBodyEl) {
+    previewBodyEl.textContent = previewBody || "(empty)";
+  }
+}
+
+async function saveEditedTemplate() {
+  try {
+    const modal = document.getElementById("edit-template-modal");
+    const templateId = modal.dataset.templateId;
+
+    const name = document.getElementById("edit-template-name").value.trim();
+    const subject = document
+      .getElementById("edit-template-subject")
+      .value.trim();
+    const body = document.getElementById("edit-template-body").value.trim();
+    const active = document.getElementById("edit-template-active").checked;
+
+    if (!name || !subject || !body) {
+      showToast("All fields are required", "warning");
+      return;
+    }
+
+    const response = await fetch(`/api/templates/${templateId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, subject, body, active }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log("✅ Template updated successfully");
+      showToast("✅ Template updated successfully!", "success");
+      closeEditTemplateModal();
+      loadTemplates(); // Reload list
+    } else {
+      console.error("❌ Failed to save template:", data.error);
+      showToast("Failed to save template: " + data.error, "error");
+    }
+  } catch (error) {
+    console.error("❌ Error saving template:", error);
+    showToast("Error saving template: " + error.message, "error");
+  }
+}
+
+// ================================================================
+// DELETE TEMPLATE MODAL SYSTEM
+// ================================================================
+
+function openDeleteTemplateModal(templateId, templateName) {
+  const modal = document.getElementById("delete-template-modal");
+  if (modal) {
+    // Store template ID for later use
+    modal.dataset.templateId = templateId;
+    // Display template name in confirmation
+    document.getElementById("delete-template-name").textContent = templateName;
+    modal.classList.remove("hidden");
+  }
+}
+
+function closeDeleteTemplateModal() {
+  const modal = document.getElementById("delete-template-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+async function confirmDeleteTemplate() {
+  try {
+    const modal = document.getElementById("delete-template-modal");
+    const templateId = modal.dataset.templateId;
+
+    const response = await fetch(`/api/templates/${templateId}`, {
+      method: "DELETE",
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log("✅ Template deleted successfully");
+      showToast("✅ Template deleted successfully!", "success");
+      closeDeleteTemplateModal();
+      loadTemplates(); // Reload list
+    } else {
+      console.error("❌ Failed to delete template:", data.error);
+      showToast("Failed to delete template", "error");
+    }
+  } catch (error) {
+    console.error("❌ Error deleting template:", error);
+    showToast("Error deleting template: " + error.message, "error");
+  }
+}
+
+// Old functions (keeping for backward compatibility, but replaced)
+async function editTemplate(templateId) {
+  openEditTemplateModal(templateId);
+}
+
+async function deleteTemplate(templateId, templateName) {
+  openDeleteTemplateModal(templateId, templateName);
+}
+
+async function toggleTemplateActive(templateId, newActive) {
+  try {
+    // First fetch the template
+    const getResponse = await fetch(`/api/templates/${templateId}`);
+    const getData = await getResponse.json();
+
+    if (!getData.success) {
+      showToast("Failed to fetch template", "error");
+      return;
+    }
+
+    const template = getData.template;
+
+    // Then update with new active status
+    const response = await fetch(`/api/templates/${templateId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: template.name,
+        subject: template.subject,
+        body: template.body,
+        active: newActive,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log(`✅ Template ${newActive ? "activated" : "deactivated"}`);
+      showToast(
+        `✅ Template ${newActive ? "activated" : "deactivated"}!`,
+        "success",
+      );
+      loadTemplates(); // Reload list
+    } else {
+      console.error("❌ Failed to update template:", data.error);
+      showToast("Failed to update template", "error");
+    }
+  } catch (error) {
+    console.error("❌ Error toggling template:", error);
+    showToast("Error toggling template: " + error.message, "error");
+  }
+}
+
 async function loadSavedCredentials() {
   try {
     const response = await fetch("/api/env");
@@ -516,6 +884,11 @@ function updateDiscoveryUI(status) {
 
   // Update logs
   updateDiscoveryLogs(status.logs);
+
+  // Refresh quota display each time discovery status updates
+  if (document.getElementById("quota-details")) {
+    loadQuotaStatus();
+  }
 }
 
 function updateDiscoveryLogs(logs) {
@@ -1266,6 +1639,53 @@ async function loadProgress() {
   }
 }
 
+// Load and display API quota usage
+async function loadQuotaStatus() {
+  try {
+    const response = await fetch("/api/quota");
+    const data = await response.json();
+
+    if (!data.success || !data.quota) {
+      throw new Error(data.error || "Invalid quota response");
+    }
+
+    const quota = data.quota;
+    const details = document.getElementById("quota-details");
+    const bar = document.getElementById("quota-progress-bar");
+
+    if (details) {
+      details.textContent = `Used ${quota.used} / ${quota.limit} units (${Math.round(quota.percentage)}%). Last reset: ${quota.last_reset || "unknown"}`;
+    }
+
+    if (bar) {
+      bar.style.width = `${Math.min(100, quota.percentage)}%`;
+    }
+  } catch (error) {
+    console.error("Error loading quota status:", error);
+    const details = document.getElementById("quota-details");
+    if (details) {
+      details.textContent = "Unable to load quota status.";
+    }
+  }
+}
+
+async function resetQuota() {
+  try {
+    const response = await fetch("/api/quota/reset", { method: "POST" });
+    const data = await response.json();
+
+    if (data.success) {
+      showToast("Quota reset successfully", "success");
+      loadQuotaStatus();
+    } else {
+      throw new Error(data.error || "Failed to reset quota");
+    }
+  } catch (error) {
+    console.error("Error resetting quota:", error);
+    showToast("Error resetting quota: " + error.message, "error");
+  }
+}
+
 // Show bulk send progress modal
 function showBulkProgress() {
   // For now, just reload progress after bulk send
@@ -1353,3 +1773,4 @@ function updateLogsCount() {
 // Initial load
 loadLeads();
 loadProgress();
+loadQuotaStatus();

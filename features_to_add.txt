@@ -31,4 +31,7 @@ UI:
 Add base keywords input field, expandible
 Should be able to search and run the operation by single click
 List out the channel every detail in the table, expand the columns of the table
-Youtube API Limits/Usage stats
+Youtube API Limits/Usage stats (Quota remaining)
+
+
+Rate limiting/quota tracking improvements (allow manual quota "reset",Add UI endpoint to show quota consumption and how many API units remain. )

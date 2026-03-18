@@ -65,6 +65,27 @@
   background-color: #059669;
 }
 
+.btn-danger {
+  background-color: #ef4444;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.btn-danger:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+  color: #9ca3af;
+}
+
 .btn-sm {
   padding: 0.25rem 0.75rem;
   font-size: 0.875rem;
@@ -502,7 +523,7 @@
 }
 
 #discovery-logs {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 0.75rem;
   line-height: 1.4;
 }

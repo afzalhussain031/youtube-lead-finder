@@ -1,0 +1,25 @@
+{
+  "templates": [
+    {
+      "id": 1,
+      "name": "Video Editing Offer",
+      "subject": "Collaboration Opportunity: Video Editing Services for {channel_name}|Quick Question About {channel_name}|Let's Boost Your {channel_name} Content",
+      "body": "Hi {channel_name} Team,|Greetings,|Hey there,\n\nI hope this message finds you well.|I'm reaching out with an exciting opportunity.|I've been impressed with your content.\n\nI'm a professional video editor specializing in YouTube content.|I specialize in enhancing YouTube videos for maximum engagement.|As a video editing expert, I focus on boosting channel growth.\n\nAfter reviewing your channel, I believe we could work together to improve your video quality and engagement.|Your content has great potential, and I'd love to help elevate it with professional editing.|I think partnering on editing could really amplify your channel's reach.\n\nWould you be open to a quick call to discuss possibilities?|Are you interested in exploring collaboration?|I'd love to discuss how I can help your channel grow.\n\nBest regards,\nVideo Editing Services",
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "Marketing Services Offer",
+      "subject": "Boost {channel_name} Let's Take {channel_name} to the Next Level",
+      "body": "Hi {channel_name} Team,|Hello there,|Greetings,\n\nI noticed your impressive {channel_name} channel and wanted to reach out.|Your content quality is outstanding, and I'd like to explore a partnership.|I've been following your work and think there's a great opportunity here.\n\nI provide marketing and growth strategies specifically for YouTube creators.|My expertise is in channel optimization and audience growth.|I help channels like yours maximize their reach and engagement.\n\nOur approach has helped many channels increase their views by 50-200% within 3 months.|With targeted strategies, we can significantly boost your metrics.|I'd love to share case studies of similar successful collaborations.\n\nWould you like to discuss a partnership?|Are you open to exploring growth strategies?|I'd like to share more details about what we can achieve.\n\nLooking forward to hearing from you,\nMarketing Services Team",
+      "active": true
+    },
+    {
+      "id": 4,
+      "name": "Short & Simple",
+      "subject": "Collaboration Opportunity for {channel_name}|{channel_name} - Let's Connect",
+      "body": "Hi {channel_name},|Hello,\n\nI'd like to propose a collaboration that could benefit your channel.|I have some ideas to help your content reach more people.\n\nCould we chat about it?|Would you be interested in discussing this?\n\nThanks,\nBest regards",
+      "active": true
+    }
+  ]
+}
