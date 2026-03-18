@@ -1006,6 +1006,10 @@ function clearLogs() {
   if (logsList) {
     logsList.innerHTML = "";
   }
+  const discoveryLogs = document.getElementById("discovery-logs");
+  if (discoveryLogs) {
+    discoveryLogs.innerHTML = "";
+  }
   updateLogsCount();
 
   // Hide logs section if empty
