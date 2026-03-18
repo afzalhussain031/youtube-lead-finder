@@ -819,6 +819,10 @@ function updateDiscoveryUI(status) {
         loadProgress(); // Update campaign progress (total leads, sent, pending)
         loadLeads(); // Reload leads table to show new discovered emails
       }, 1000); // Wait 1 second to ensure backend has persisted the data
+
+      // Show next steps set
+      const nextSteps = document.getElementById("discovery-next-steps");
+      if (nextSteps) nextSteps.classList.remove("hidden");
     } else {
       statusText.textContent = "Ready to discover leads";
       details.textContent = "No discovery running";
@@ -826,6 +830,10 @@ function updateDiscoveryUI(status) {
       document
         .getElementById("discovery-progress-section")
         .classList.add("hidden");
+
+      // Hide next steps if not completed
+      const nextSteps = document.getElementById("discovery-next-steps");
+      if (nextSteps) nextSteps.classList.add("hidden");
     }
 
     // Update buttons
@@ -834,6 +842,9 @@ function updateDiscoveryUI(status) {
 
     // Stop polling
     stopDiscoveryStatusPolling();
+
+    // Refresh the discovery wizard (config/quota) when discovery stops
+    loadDiscoveryWizard();
   }
 
   // Update progress bar
@@ -916,12 +927,12 @@ function updateDiscoveryLogs(logs) {
   logsContainer.scrollTop = logsContainer.scrollHeight;
 }
 
-async function startDiscovery() {
+async function startDiscovery(config = {}) {
   try {
     const response = await fetch("/api/discovery/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}), // Empty config for now
+      body: JSON.stringify(config),
     });
 
     const result = await response.json();
@@ -929,10 +940,8 @@ async function startDiscovery() {
     if (result.success) {
       showToast("Discovery started! Check progress above.", "info");
 
-      // ✅ FIX: Immediately start polling after successful POST
-      // Fetch current status once
+      // Start polling after successful start
       fetchDiscoveryStatus();
-      // Begin the polling interval (checks every 2 seconds)
       startDiscoveryStatusPolling();
     } else {
       showToast(result.error || "Failed to start discovery", "error");
@@ -940,6 +949,47 @@ async function startDiscovery() {
   } catch (error) {
     showToast("Error starting discovery", "error");
     console.error(error);
+  }
+}
+
+async function confirmStartDiscovery() {
+  try {
+    // Load current config, keywords, and quota to summarize to user
+    const [configRes, keywordsRes, quotaRes] = await Promise.all([
+      fetch("/api/discovery/config"),
+      fetch("/api/keywords"),
+      fetch("/api/quota"),
+    ]);
+
+    const config = await configRes.json();
+    const keywords = await keywordsRes.json();
+    const quota = await quotaRes.json();
+
+    const keywordCount =
+      keywords.count || (keywords.keywords ? keywords.keywords.length : 0);
+    const quotaText = quota.quota
+      ? `${quota.quota.used}/${quota.quota.limit} (${Math.round(quota.quota.percentage)}%)`
+      : "Unknown";
+
+    const message =
+      `You are about to start a discovery run with:\n` +
+      `• Keywords: ${keywordCount}\n` +
+      `• Region: ${config.default_region || "Any"}\n` +
+      `• Language: ${config.default_language || "Any"}\n` +
+      `• Subscribers: ${config.min_subscribers} - ${config.max_subscribers}\n` +
+      `• Quota remaining: ${quotaText}\n\n` +
+      `Discovery will run in the background and won\'t block the UI. Continue?`;
+
+    showConfirmModal(
+      "Confirm Discovery",
+      message,
+      "Start Discovery",
+      "Cancel",
+      () => startDiscovery(config),
+    );
+  } catch (error) {
+    console.error("Error preparing discovery confirmation:", error);
+    showToast("Unable to prepare discovery confirmation", "error");
   }
 }
 
@@ -1019,6 +1069,7 @@ async function saveDiscoveryConfig() {
     if (result.success) {
       showToast("Discovery started with custom config!", "info");
       closeDiscoveryConfig();
+      loadDiscoveryWizard();
     } else {
       showToast(result.error || "Failed to start discovery", "error");
     }
@@ -1639,6 +1690,41 @@ async function loadProgress() {
   }
 }
 
+// Load wizard info (config, keyword count, quota)
+async function loadDiscoveryWizard() {
+  try {
+    const [configRes, keywordsRes, quotaRes] = await Promise.all([
+      fetch("/api/discovery/config"),
+      fetch("/api/keywords"),
+      fetch("/api/quota"),
+    ]);
+
+    const config = await configRes.json();
+    const keywords = await keywordsRes.json();
+    const quota = await quotaRes.json();
+
+    const keywordCount =
+      keywords.count || (keywords.keywords ? keywords.keywords.length : 0);
+
+    document.getElementById("wizard-keywords-count").textContent = keywordCount;
+    document.getElementById("wizard-region").textContent =
+      config.default_region || "Any";
+    document.getElementById("wizard-language").textContent =
+      config.default_language || "Any";
+    document.getElementById("wizard-subs-range").textContent =
+      `${config.min_subscribers} - ${config.max_subscribers}`;
+
+    if (quota.quota) {
+      document.getElementById("wizard-quota").textContent =
+        `${quota.quota.used}/${quota.quota.limit} (${Math.round(quota.quota.percentage)}%)`;
+    } else {
+      document.getElementById("wizard-quota").textContent = "Unknown";
+    }
+  } catch (error) {
+    console.error("Error loading discovery wizard info:", error);
+  }
+}
+
 // Load and display API quota usage
 async function loadQuotaStatus() {
   try {
@@ -1683,6 +1769,9 @@ async function resetQuota() {
   } catch (error) {
     console.error("Error resetting quota:", error);
     showToast("Error resetting quota: " + error.message, "error");
+  } finally {
+    // Refresh all UI state after quota change
+    loadDiscoveryWizard();
   }
 }
 
@@ -1774,3 +1863,4 @@ function updateLogsCount() {
 loadLeads();
 loadProgress();
 loadQuotaStatus();
+loadDiscoveryWizard();

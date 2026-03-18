@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, send_file
 from services.lead_services import load_leads
 from services.email_services import send_personalized_email, load_sent_emails, save_sent_email
 from services.discovery_service import discovery_service  # NEW
 from services.template_service import TemplateService  # NEW
 from api.youtube_api import YouTubeAPI
 import os
+import io
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -323,6 +324,32 @@ def save_keywords():
     except Exception as e:
         print(f"Error saving keywords: {e}")
         return jsonify({"error": f"Failed to save keywords: {str(e)}"}), 500
+
+
+@dashboard_bp.route("/api/leads/download", methods=["GET"])
+def download_leads():
+    """Download the latest leads CSV."""
+    try:
+        file_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "data",
+            "leads.csv",
+        )
+
+        if not os.path.exists(file_path):
+            return jsonify({"error": "Leads file not found"}), 404
+
+        # Use send_file with attachment filename
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name="leads.csv",
+            mimetype="text/csv",
+        )
+
+    except Exception as e:
+        print(f"Error downloading leads: {e}")
+        return jsonify({"error": f"Failed to download leads: {str(e)}"}), 500
 
 
 # ============================================================

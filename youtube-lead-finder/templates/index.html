@@ -50,6 +50,81 @@
             </div>
           </div>
 
+          <!-- Discovery Wizard -->
+          <div class="mb-4 p-4 bg-white rounded border">
+            <h3 class="font-semibold mb-2">Discovery Quick Start</h3>
+            <div
+              class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-700 mb-3"
+            >
+              <div>
+                <div class="font-medium">Keywords Loaded</div>
+                <div id="wizard-keywords-count" class="text-gray-600">-</div>
+              </div>
+              <div>
+                <div class="font-medium">Region</div>
+                <div id="wizard-region" class="text-gray-600">-</div>
+              </div>
+              <div>
+                <div class="font-medium">Language</div>
+                <div id="wizard-language" class="text-gray-600">-</div>
+              </div>
+              <div>
+                <div class="font-medium">Subscribers Range</div>
+                <div id="wizard-subs-range" class="text-gray-600">-</div>
+              </div>
+              <div>
+                <div class="font-medium">Quota Remaining</div>
+                <div id="wizard-quota" class="text-gray-600">-</div>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+              <button
+                id="wizard-start-btn"
+                class="btn-primary w-full sm:w-auto"
+                onclick="confirmStartDiscovery()"
+              >
+                🚀 Run Discovery
+              </button>
+              <button
+                class="btn-secondary w-full sm:w-auto"
+                onclick="showDiscoveryConfig()"
+              >
+                ⚙️ Change Settings
+              </button>
+            </div>
+          </div>
+
+          <!-- Next Steps (shown after completion) -->
+          <div
+            id="discovery-next-steps"
+            class="hidden mb-4 p-4 bg-green-50 rounded border border-green-200"
+          >
+            <h3 class="font-semibold mb-2">✅ Discovery Complete</h3>
+            <p class="text-sm text-gray-700 mb-3">
+              Your discovery run finished successfully. What would you like to
+              do next?
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <button
+                class="btn-primary"
+                onclick="
+                  document
+                    .getElementById('leads-table')
+                    .scrollIntoView({ behavior: 'smooth' })
+                "
+              >
+                View Leads
+              </button>
+              <button
+                class="btn-secondary"
+                onclick="window.open('/api/leads/download', '_blank')"
+              >
+                Download CSV
+              </button>
+            </div>
+          </div>
+
           <!-- Quota Usage -->
           <div id="quota-section" class="mb-4 p-4 bg-white rounded border">
             <div class="flex items-center justify-between mb-2">
