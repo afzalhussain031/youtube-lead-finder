@@ -491,3 +491,27 @@
 #confirm-modal-confirm:active {
   transform: scale(0.98);
 }
+
+/* Discovery Pipeline Styles */
+#discovery-indicator {
+  transition: background-color 0.3s ease;
+}
+
+#discovery-progress-bar {
+  transition: width 0.5s ease;
+}
+
+#discovery-logs {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Discovery config modal */
+#discovery-config-modal {
+  animation: fadeIn 0.2s ease-out;
+}
+
+#discovery-config-modal > div {
+  animation: slideUp 0.3s ease-out;
+}

@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify
 from services.lead_services import load_leads
 from services.email_services import send_personalized_email, load_sent_emails, save_sent_email
+from services.discovery_service import discovery_service  # NEW
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -93,3 +94,72 @@ def api_progress():
         "pending": pending_count,
         "percentage": (sent_count / total_leads * 100) if total_leads > 0 else 0
     })
+
+# ============================================================
+# DISCOVERY PIPELINE ROUTES (NEW)
+# ============================================================
+
+@dashboard_bp.route("/api/discovery/status")
+def discovery_status():
+    """Get current discovery status"""
+    return jsonify(discovery_service.get_status())
+
+@dashboard_bp.route("/api/discovery/start", methods=["POST"])
+def start_discovery():
+    """Start discovery pipeline with optional config overrides"""
+    if discovery_service.get_status()['is_running']:
+        return jsonify({"error": "Discovery already running"}), 400
+
+    # Get config overrides from request
+    config_overrides = request.get_json() or {}
+
+    result = discovery_service.start_discovery(config_overrides)
+    if 'error' in result:
+        return jsonify(result), 400
+
+    return jsonify(result)
+
+@dashboard_bp.route("/api/discovery/stop", methods=["POST"])
+def stop_discovery():
+    """Stop running discovery"""
+    result = discovery_service.stop_discovery()
+    if 'error' in result:
+        return jsonify(result), 400
+
+    return jsonify(result)
+
+@dashboard_bp.route("/api/discovery/config")
+def get_discovery_config():
+    """Get current discovery configuration"""
+    from config import (
+        MAX_RESULTS, MAX_WORKERS, MAX_CHANNELS_TO_PROCESS,
+        DEFAULT_REGION, DEFAULT_LANGUAGE, MIN_SUBSCRIBERS, MAX_SUBSCRIBERS
+    )
+
+    return jsonify({
+        'max_results': MAX_RESULTS,
+        'max_workers': MAX_WORKERS,
+        'max_channels': MAX_CHANNELS_TO_PROCESS,
+        'default_region': DEFAULT_REGION,
+        'default_language': DEFAULT_LANGUAGE,
+        'min_subscribers': MIN_SUBSCRIBERS,
+        'max_subscribers': MAX_SUBSCRIBERS
+    })
+
+@dashboard_bp.route("/api/discovery/config", methods=["POST"])
+def update_discovery_config():
+    """Update discovery configuration (for this session)"""
+    # Note: This updates runtime config, not persistent config.py
+    # For persistence, you'd need to modify config.py file
+
+    config_updates = request.get_json()
+
+    # Validate and apply temporary overrides
+    # This is a simplified version - you'd want more validation
+
+    # Update global config variables (temporary)
+    if 'max_channels' in config_updates:
+        import config
+        config.MAX_CHANNELS_TO_PROCESS = config_updates['max_channels']
+
+    return jsonify({"success": True, "message": "Configuration updated"})

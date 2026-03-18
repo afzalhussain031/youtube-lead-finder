@@ -28,6 +28,78 @@
       </header>
 
       <!-- ============================================================
+         DISCOVERY PIPELINE SECTION (NEW)
+         ============================================================ -->
+      <section class="card mb-6">
+        <div class="card-body">
+          <h2 class="text-xl font-semibold mb-4">🔍 Lead Discovery</h2>
+
+          <!-- Discovery Status -->
+          <div id="discovery-status" class="mb-4 p-4 bg-gray-50 rounded">
+            <div class="flex items-center gap-2 mb-2">
+              <div id="discovery-indicator" class="w-3 h-3 bg-gray-400 rounded-full"></div>
+              <span id="discovery-status-text" class="font-medium">Ready to discover leads</span>
+            </div>
+            <div class="text-sm text-gray-600" id="discovery-details">No discovery running</div>
+          </div>
+
+          <!-- Discovery Progress (shown when running) -->
+          <div id="discovery-progress-section" class="hidden mb-4">
+            <div class="mb-2">
+              <div class="flex justify-between text-sm mb-1">
+                <span id="discovery-step">Initializing...</span>
+                <span id="discovery-percent">0%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="discovery-progress-bar" class="bg-green-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Discovery Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-sm">
+              <div>
+                <div class="font-bold text-blue-600" id="channels-found">0</div>
+                <div class="text-gray-600">Channels Found</div>
+              </div>
+              <div>
+                <div class="font-bold text-purple-600" id="channels-analyzed">0</div>
+                <div class="text-gray-600">Analyzed</div>
+              </div>
+              <div>
+                <div class="font-bold text-green-600" id="leads-generated">0</div>
+                <div class="text-gray-600">Leads Generated</div>
+              </div>
+              <div>
+                <div class="font-bold text-orange-600" id="discovery-time">0s</div>
+                <div class="text-gray-600">Elapsed</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discovery Controls -->
+          <div class="flex flex-col sm:flex-row gap-4 mb-4">
+            <button id="start-discovery-btn" class="btn-primary" onclick="startDiscovery()">
+              🚀 Start Discovery
+            </button>
+            <button id="stop-discovery-btn" class="btn-secondary hidden" onclick="stopDiscovery()">
+              ⏹️ Stop Discovery
+            </button>
+            <button id="configure-discovery-btn" class="btn-secondary" onclick="showDiscoveryConfig()">
+              ⚙️ Configure
+            </button>
+          </div>
+
+          <!-- Discovery Logs -->
+          <div id="discovery-logs-section" class="hidden">
+            <h3 class="font-semibold mb-2">📝 Recent Logs</h3>
+            <div id="discovery-logs" class="bg-black text-green-400 p-3 rounded text-sm font-mono max-h-40 overflow-y-auto">
+              <!-- Logs will be inserted here -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
          CONTROLS SECTION
          Buttons: Send All, Send Selected, Search, Filters
          ============================================================ -->
@@ -338,6 +410,47 @@
           >
             Confirm
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         DISCOVERY CONFIG MODAL (NEW)
+         ============================================================ -->
+    <div id="discovery-config-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold mb-4">⚙️ Discovery Configuration</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Max Channels to Process</label>
+            <input id="config-max-channels" type="number" class="w-full p-2 border rounded" placeholder="5000">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Target Region (ISO code)</label>
+            <input id="config-region" type="text" class="w-full p-2 border rounded" placeholder="US, GB, etc.">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Target Language (ISO code)</label>
+            <input id="config-language" type="text" class="w-full p-2 border rounded" placeholder="en, es, etc.">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Min Subscribers</label>
+            <input id="config-min-subs" type="number" class="w-full p-2 border rounded" placeholder="1000">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Max Subscribers</label>
+            <input id="config-max-subs" type="number" class="w-full p-2 border rounded" placeholder="1000000">
+          </div>
+        </div>
+
+        <div class="flex gap-3 justify-end mt-6">
+          <button class="btn-secondary" onclick="closeDiscoveryConfig()">Cancel</button>
+          <button class="btn-primary" onclick="saveDiscoveryConfig()">Save & Start</button>
         </div>
       </div>
     </div>

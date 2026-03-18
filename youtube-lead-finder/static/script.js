@@ -75,6 +75,239 @@ function executeConfirmAction() {
   closeConfirmModal();
 }
 
+// ================================================================
+// DISCOVERY PIPELINE MANAGEMENT
+// Control and monitor the lead discovery process
+// ================================================================
+
+let discoveryStatus = {}; // Cache current status
+let discoveryStatusInterval = null; // Polling interval
+
+function startDiscoveryStatusPolling() {
+  // Poll every 2 seconds for status updates
+  if (discoveryStatusInterval) clearInterval(discoveryStatusInterval);
+
+  discoveryStatusInterval = setInterval(() => {
+    fetchDiscoveryStatus();
+  }, 2000);
+}
+
+function stopDiscoveryStatusPolling() {
+  if (discoveryStatusInterval) {
+    clearInterval(discoveryStatusInterval);
+    discoveryStatusInterval = null;
+  }
+}
+
+async function fetchDiscoveryStatus() {
+  try {
+    const response = await fetch('/api/discovery/status');
+    const status = await response.json();
+    updateDiscoveryUI(status);
+  } catch (error) {
+    console.error('Error fetching discovery status:', error);
+  }
+}
+
+function updateDiscoveryUI(status) {
+  discoveryStatus = status;
+
+  // Update status indicator
+  const indicator = document.getElementById('discovery-indicator');
+  const statusText = document.getElementById('discovery-status-text');
+  const details = document.getElementById('discovery-details');
+
+  if (status.is_running) {
+    indicator.className = 'w-3 h-3 bg-green-500 rounded-full animate-pulse';
+    statusText.textContent = `Running: ${status.current_step.replace('_', ' ')}`;
+    details.textContent = `${status.progress}% complete`;
+
+    // Show progress section
+    document.getElementById('discovery-progress-section').classList.remove('hidden');
+    document.getElementById('discovery-logs-section').classList.remove('hidden');
+
+    // Update buttons
+    document.getElementById('start-discovery-btn').classList.add('hidden');
+    document.getElementById('stop-discovery-btn').classList.remove('hidden');
+
+    // Start polling if not already
+    if (!discoveryStatusInterval) startDiscoveryStatusPolling();
+
+  } else {
+    indicator.className = 'w-3 h-3 bg-gray-400 rounded-full';
+
+    if (status.error) {
+      statusText.textContent = 'Error occurred';
+      details.textContent = status.error;
+      indicator.className = 'w-3 h-3 bg-red-500 rounded-full';
+    } else if (status.current_step === 'completed') {
+      statusText.textContent = 'Discovery completed';
+      details.textContent = `Generated ${status.leads_generated} leads`;
+      showToast(`Discovery completed! ${status.leads_generated} leads generated`, 'success');
+    } else {
+      statusText.textContent = 'Ready to discover leads';
+      details.textContent = 'No discovery running';
+    }
+
+    // Hide progress section
+    document.getElementById('discovery-progress-section').classList.add('hidden');
+
+    // Update buttons
+    document.getElementById('start-discovery-btn').classList.remove('hidden');
+    document.getElementById('stop-discovery-btn').classList.add('hidden');
+
+    // Stop polling
+    stopDiscoveryStatusPolling();
+  }
+
+  // Update progress bar
+  const progressBar = document.getElementById('discovery-progress-bar');
+  if (progressBar) progressBar.style.width = `${status.progress}%`;
+
+  // Update stats
+  document.getElementById('discovery-step').textContent = status.current_step.replace('_', ' ');
+  document.getElementById('discovery-percent').textContent = `${status.progress}%`;
+  document.getElementById('channels-found').textContent = status.channels_found;
+  document.getElementById('channels-analyzed').textContent = status.channels_analyzed;
+  document.getElementById('leads-generated').textContent = status.leads_generated;
+
+  // Update elapsed time
+  if (status.start_time) {
+    const start = new Date(status.start_time);
+    const now = new Date();
+    const elapsed = Math.floor((now - start) / 1000);
+    document.getElementById('discovery-time').textContent = `${elapsed}s`;
+  }
+
+  // Update logs
+  updateDiscoveryLogs(status.logs);
+}
+
+function updateDiscoveryLogs(logs) {
+  const logsContainer = document.getElementById('discovery-logs');
+  if (!logsContainer) return;
+
+  logsContainer.innerHTML = '';
+
+  logs.forEach(log => {
+    const logElement = document.createElement('div');
+    logElement.className = 'mb-1';
+
+    const levelClass = log.level === 'error' ? 'text-red-400' :
+                      log.level === 'warning' ? 'text-yellow-400' : 'text-green-400';
+
+    logElement.innerHTML = `<span class="text-gray-500">${log.timestamp}</span> <span class="${levelClass}">${log.message}</span>`;
+    logsContainer.appendChild(logElement);
+  });
+
+  // Auto-scroll to bottom
+  logsContainer.scrollTop = logsContainer.scrollHeight;
+}
+
+async function startDiscovery() {
+  try {
+    const response = await fetch('/api/discovery/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}) // Empty config for now
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showToast('Discovery started! Check progress above.', 'info');
+      // Status will be updated by polling
+    } else {
+      showToast(result.error || 'Failed to start discovery', 'error');
+    }
+  } catch (error) {
+    showToast('Error starting discovery', 'error');
+    console.error(error);
+  }
+}
+
+async function stopDiscovery() {
+  try {
+    const response = await fetch('/api/discovery/stop', { method: 'POST' });
+    const result = await response.json();
+
+    if (result.success) {
+      showToast('Stopping discovery...', 'warning');
+    } else {
+      showToast(result.error || 'Failed to stop discovery', 'error');
+    }
+  } catch (error) {
+    showToast('Error stopping discovery', 'error');
+    console.error(error);
+  }
+}
+
+function showDiscoveryConfig() {
+  // Load current config
+  fetch('/api/discovery/config')
+    .then(response => response.json())
+    .then(config => {
+      document.getElementById('config-max-channels').value = config.max_channels;
+      document.getElementById('config-region').value = config.default_region || '';
+      document.getElementById('config-language').value = config.default_language || '';
+      document.getElementById('config-min-subs').value = config.min_subscribers;
+      document.getElementById('config-max-subs').value = config.max_subscribers;
+
+      document.getElementById('discovery-config-modal').classList.remove('hidden');
+    })
+    .catch(error => {
+      console.error('Error loading config:', error);
+      showToast('Error loading configuration', 'error');
+    });
+}
+
+function closeDiscoveryConfig() {
+  document.getElementById('discovery-config-modal').classList.add('hidden');
+}
+
+async function saveDiscoveryConfig() {
+  const config = {
+    max_channels: parseInt(document.getElementById('config-max-channels').value) || 5000,
+    region: document.getElementById('config-region').value || null,
+    language: document.getElementById('config-language').value || null,
+    min_subscribers: parseInt(document.getElementById('config-min-subs').value) || 1000,
+    max_subscribers: parseInt(document.getElementById('config-max-subs').value) || 1000000
+  };
+
+  try {
+    // Save config
+    await fetch('/api/discovery/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+
+    // Start discovery with config
+    const response = await fetch('/api/discovery/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showToast('Discovery started with custom config!', 'info');
+      closeDiscoveryConfig();
+    } else {
+      showToast(result.error || 'Failed to start discovery', 'error');
+    }
+  } catch (error) {
+    showToast('Error saving configuration', 'error');
+    console.error(error);
+  }
+}
+
+// Initialize discovery status on page load
+document.addEventListener('DOMContentLoaded', function() {
+  fetchDiscoveryStatus(); // Get initial status
+});
+
 // Load leads and populate table
 async function loadLeads() {
   const table = document.getElementById("leads-table");
