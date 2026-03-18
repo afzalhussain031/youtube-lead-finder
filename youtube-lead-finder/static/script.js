@@ -216,7 +216,13 @@ async function startDiscovery() {
 
     if (result.success) {
       showToast('Discovery started! Check progress above.', 'info');
-      // Status will be updated by polling
+      
+      // ✅ FIX: Immediately start polling after successful POST
+      // Fetch current status once
+      fetchDiscoveryStatus();
+      // Begin the polling interval (checks every 2 seconds)
+      startDiscoveryStatusPolling();
+      
     } else {
       showToast(result.error || 'Failed to start discovery', 'error');
     }
