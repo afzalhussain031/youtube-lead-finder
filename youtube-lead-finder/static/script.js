@@ -232,13 +232,21 @@ function updateDiscoveryUI(status) {
         .classList.add("hidden");
     } else if (status.current_step === "completed") {
       statusText.textContent = "Discovery completed";
-      details.textContent = `Generated ${status.new_leads_generated || 0} leads - view analytics below`;
+      const added = status.new_leads_added || 0;
+      const qualified = status.new_leads_qualified || 0;
+      details.textContent = `Added ${added} leads, ${qualified} qualified - view analytics below`;
       showToast(
-        `Discovery completed! ${status.new_leads_generated || 0} leads generated`,
+        `Discovery completed! ${added} leads added, ${qualified} qualified`,
         "success",
       );
       // Keep progress section visible to show final analytics
       // Do not hide it
+
+      // Refresh campaign progress stats and leads list
+      setTimeout(() => {
+        loadProgress(); // Update campaign progress (total leads, sent, pending)
+        loadLeads(); // Reload leads table to show new discovered emails
+      }, 1000); // Wait 1 second to ensure backend has persisted the data
     } else {
       statusText.textContent = "Ready to discover leads";
       details.textContent = "No discovery running";
@@ -269,8 +277,10 @@ function updateDiscoveryUI(status) {
     status.new_channels_found || 0;
   document.getElementById("new-channels-analyzed").textContent =
     status.new_channels_analyzed || 0;
-  document.getElementById("new-leads-generated").textContent =
-    status.new_leads_generated || 0;
+  document.getElementById("new-leads-added").textContent =
+    status.new_leads_added || 0;
+  document.getElementById("new-leads-qualified").textContent =
+    status.new_leads_qualified || 0;
 
   // Update elapsed time
   if (status.start_time) {

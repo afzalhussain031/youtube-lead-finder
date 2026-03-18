@@ -23,7 +23,8 @@ class DiscoveryService:
             'leads_generated': 0,
             'new_channels_found': 0,
             'new_channels_analyzed': 0,
-            'new_leads_generated': 0,
+            'new_leads_added': 0,
+            'new_leads_qualified': 0,
             'start_time': None,
             'logs': [],
             'can_stop': False,
@@ -72,7 +73,8 @@ class DiscoveryService:
             'leads_generated': 0,
             'new_channels_found': 0,
             'new_channels_analyzed': 0,
-            'new_leads_generated': 0,
+            'new_leads_added': 0,
+            'new_leads_qualified': 0,
             'start_time': datetime.now().isoformat(),
             'logs': [],
             'can_stop': True,
@@ -192,6 +194,9 @@ class DiscoveryService:
             self.add_log(f'Total channels discovered: {len(new_channel_ids)}')
             self.add_log(f'New channels to analyze: {len(truly_new_channels)}')
 
+            # Track how many fresh leads (channels) were added to the DB this run
+            self.status['new_leads_added'] = len(truly_new_channels)
+
             # Limit channels
             limited_channel_ids = all_channels_to_process[:MAX_CHANNELS_TO_PROCESS]
             self.add_log(f'Limited to {len(limited_channel_ids)} channels for processing')
@@ -253,8 +258,12 @@ class DiscoveryService:
             qualified_leads = [ch for ch in scored_channels if ch['score'] > 60 and ch.get('email')]
             csv_exporter.export_leads(qualified_leads, LEADS_CSV)
 
+            # Count leads eligible for outreach (qualified leads)
             self.status['leads_generated'] = len(qualified_leads)
-            self.status['new_leads_generated'] = len(qualified_leads)
+
+            # Among newly discovered channels, count how many qualify for outreach
+            new_qualified_leads = [ch for ch in qualified_leads if ch['channel_id'] in truly_new_channels]
+            self.status['new_leads_qualified'] = len(new_qualified_leads)
 
             # Complete
             self.status['current_step'] = 'completed'
