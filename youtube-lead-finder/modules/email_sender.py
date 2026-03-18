@@ -1,7 +1,6 @@
 import os
 import smtplib
 import time
-import time
 import csv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -10,9 +9,10 @@ from dotenv import load_dotenv
 # Load environment variables from a .env file (create one in the project root)
 load_dotenv()
 
-# Gmail credentials (set these in your .env file)
-GMAIL_USER = os.getenv('GMAIL_USER') # Your Gmail address
-GMAIL_APP_PASSWORD = os.getenv('GMAIL_APP_PASSWORD') # App Password from Google
+# Gmail credentials - read at runtime (not cached)
+def get_gmail_credentials():
+    """Get Gmail credentials at runtime, allowing for dynamic updates."""
+    return os.getenv('GMAIL_USER'), os.getenv('GMAIL_APP_PASSWORD')
 
 # Email template (customize as needed)
 SUBJECT_TEMPLATE = "Collaboration Opportunity:  Video Editing Services for {channel_name}"
@@ -55,9 +55,16 @@ def save_sent_email(email):
 def send_personalized_email(to_email, channel_name):
     """Senda personalized email to a single recipient."""
     try:
+        # Get credentials at runtime
+        gmail_user, gmail_password = get_gmail_credentials()
+        
+        if not gmail_user or not gmail_password:
+            print(f"Error: Gmail credentials not configured")
+            return False
+        
         # Set up the email
         msg = MIMEMultipart()
-        msg['From'] = GMAIL_USER
+        msg['From'] = gmail_user
         msg['To'] = to_email
         msg['Subject'] = SUBJECT_TEMPLATE.format(channel_name=channel_name)
 
@@ -67,10 +74,10 @@ def send_personalized_email(to_email, channel_name):
         # Connect to Gmail SMTP
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls() #Secures the connection
-        server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+        server.login(gmail_user, gmail_password)
 
         # Send the email
-        server.sendmail(GMAIL_USER, to_email, msg.as_string())
+        server.sendmail(gmail_user, to_email, msg.as_string())
         server.quit()
 
         print(f"Email sent successfully to {to_email} for {channel_name}")

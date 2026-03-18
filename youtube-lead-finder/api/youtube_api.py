@@ -1,19 +1,27 @@
+import os
 import requests
 import time
 import logging
-from config import API_KEY
 from utils.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
 
 class YouTubeAPI:
     def __init__(self):
-        self.api_key = API_KEY
         self.base_url = "https://www.googleapis.com/youtube/v3"
         self.rate_limiter = RateLimiter()
+    
+    def _get_api_key(self):
+        """Get API key at runtime, allowing for dynamic updates."""
+        return os.getenv('YOUTUBE_API_KEY')
 
     def _make_request(self, endpoint, params):
         """Make a request to YouTube API with enhanced rate limiting and quota tracking."""
+        # Get API key at runtime
+        api_key = self._get_api_key()
+        if not api_key:
+            raise Exception("YouTube API key not configured. Please add YOUTUBE_API_KEY to credentials.")
+        
         # Estimate cost based on endpoint
         estimated_cost = self._estimate_request_cost(endpoint, params)
         
@@ -22,7 +30,7 @@ class YouTubeAPI:
             raise Exception(f"Daily quota would be exceeded. Request cost: {estimated_cost}")
         
         url = f"{self.base_url}/{endpoint}"
-        params['key'] = self.api_key
+        params['key'] = api_key
         
         max_retries = 3
         for attempt in range(max_retries):

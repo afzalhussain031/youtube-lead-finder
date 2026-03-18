@@ -21,6 +21,9 @@ class DiscoveryService:
             'channels_found': 0,
             'channels_analyzed': 0,
             'leads_generated': 0,
+            'new_channels_found': 0,
+            'new_channels_analyzed': 0,
+            'new_leads_generated': 0,
             'start_time': None,
             'logs': [],
             'can_stop': False,
@@ -67,6 +70,9 @@ class DiscoveryService:
             'channels_found': 0,
             'channels_analyzed': 0,
             'leads_generated': 0,
+            'new_channels_found': 0,
+            'new_channels_analyzed': 0,
+            'new_leads_generated': 0,
             'start_time': datetime.now().isoformat(),
             'logs': [],
             'can_stop': True,
@@ -182,6 +188,7 @@ class DiscoveryService:
             all_channels_to_process = list(truly_new_channels) + [row[0] for row in channels_needing_update]
 
             self.status['channels_found'] = len(new_channel_ids)
+            self.status['new_channels_found'] = len(truly_new_channels)
             self.add_log(f'Total channels discovered: {len(new_channel_ids)}')
             self.add_log(f'New channels to analyze: {len(truly_new_channels)}')
 
@@ -211,6 +218,10 @@ class DiscoveryService:
 
                     batch_results = channel_analyzer.analyze_channels_batch(batch)
                     analyzed_channels.extend(batch_results)
+
+                    # Count new channels analyzed
+                    new_in_batch = [ch for ch in batch_results if ch and ch['channel_id'] in truly_new_channels]
+                    self.status['new_channels_analyzed'] += len(new_in_batch)
 
                     # Update timestamps
                     for channel in batch_results:
@@ -243,6 +254,7 @@ class DiscoveryService:
             csv_exporter.export_leads(qualified_leads, LEADS_CSV)
 
             self.status['leads_generated'] = len(qualified_leads)
+            self.status['new_leads_generated'] = len(qualified_leads)
 
             # Complete
             self.status['current_step'] = 'completed'

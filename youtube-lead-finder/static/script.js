@@ -99,6 +99,89 @@ function stopDiscoveryStatusPolling() {
   }
 }
 
+// Credentials Modal Functions
+function openCredsModal() {
+  document.getElementById("creds-modal").classList.remove("hidden");
+  // Load saved credentials when opening modal
+  loadSavedCredentials();
+}
+
+function closeCredsModal() {
+  document.getElementById("creds-modal").classList.add("hidden");
+}
+
+async function loadSavedCredentials() {
+  try {
+    const response = await fetch("/api/env");
+    const credentials = await response.json();
+
+    if (response.ok) {
+      // Autofill the form with saved credentials
+      if (credentials.YOUTUBE_API_KEY) {
+        document.getElementById("env-youtube-key").value =
+          credentials.YOUTUBE_API_KEY;
+      }
+      if (credentials.GMAIL_USER) {
+        document.getElementById("env-gmail-user").value =
+          credentials.GMAIL_USER;
+      }
+      if (credentials.GMAIL_APP_PASSWORD) {
+        document.getElementById("env-gmail-password").value =
+          credentials.GMAIL_APP_PASSWORD;
+      }
+    }
+  } catch (error) {
+    console.error("Error loading credentials:", error);
+  }
+}
+
+function togglePasswordVisibility(fieldId) {
+  const input = document.getElementById(fieldId);
+  const isPassword = input.type === "password";
+  input.type = isPassword ? "text" : "password";
+}
+
+async function saveEnvCredentials() {
+  const youtubeKey = document.getElementById("env-youtube-key").value.trim();
+  const gmailUser = document.getElementById("env-gmail-user").value.trim();
+  const gmailPassword = document
+    .getElementById("env-gmail-password")
+    .value.trim();
+
+  if (!youtubeKey || !gmailUser || !gmailPassword) {
+    showToast("All fields are required", "error");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/env", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        YOUTUBE_API_KEY: youtubeKey,
+        GMAIL_USER: gmailUser,
+        GMAIL_APP_PASSWORD: gmailPassword,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      showToast(data.error || "Failed to save credentials", "error");
+      return;
+    }
+
+    showToast(
+      "Credentials saved successfully! Changes applied immediately.",
+      "success",
+    );
+    closeCredsModal();
+  } catch (error) {
+    console.error("Error saving credentials:", error);
+    showToast("Error: " + error.message, "error");
+  }
+}
+
 async function fetchDiscoveryStatus() {
   try {
     const response = await fetch("/api/discovery/status");
@@ -143,22 +226,27 @@ function updateDiscoveryUI(status) {
       statusText.textContent = "Error occurred";
       details.textContent = status.error;
       indicator.className = "w-3 h-3 bg-red-500 rounded-full";
+      // Hide progress section on error
+      document
+        .getElementById("discovery-progress-section")
+        .classList.add("hidden");
     } else if (status.current_step === "completed") {
       statusText.textContent = "Discovery completed";
-      details.textContent = `Generated ${status.leads_generated} leads`;
+      details.textContent = `Generated ${status.new_leads_generated || 0} leads - view analytics below`;
       showToast(
-        `Discovery completed! ${status.leads_generated} leads generated`,
+        `Discovery completed! ${status.new_leads_generated || 0} leads generated`,
         "success",
       );
+      // Keep progress section visible to show final analytics
+      // Do not hide it
     } else {
       statusText.textContent = "Ready to discover leads";
       details.textContent = "No discovery running";
+      // Hide progress section
+      document
+        .getElementById("discovery-progress-section")
+        .classList.add("hidden");
     }
-
-    // Hide progress section
-    document
-      .getElementById("discovery-progress-section")
-      .classList.add("hidden");
 
     // Update buttons
     document.getElementById("start-discovery-btn").classList.remove("hidden");
@@ -177,11 +265,12 @@ function updateDiscoveryUI(status) {
     status.current_step.replace("_", " ");
   document.getElementById("discovery-percent").textContent =
     `${status.progress}%`;
-  document.getElementById("channels-found").textContent = status.channels_found;
-  document.getElementById("channels-analyzed").textContent =
-    status.channels_analyzed;
-  document.getElementById("leads-generated").textContent =
-    status.leads_generated;
+  document.getElementById("new-channels-found").textContent =
+    status.new_channels_found || 0;
+  document.getElementById("new-channels-analyzed").textContent =
+    status.new_channels_analyzed || 0;
+  document.getElementById("new-leads-generated").textContent =
+    status.new_leads_generated || 0;
 
   // Update elapsed time
   if (status.start_time) {

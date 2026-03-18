@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, jsonify
 from services.lead_services import load_leads
 from services.email_services import send_personalized_email, load_sent_emails, save_sent_email
 from services.discovery_service import discovery_service  # NEW
+import os
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -163,3 +164,67 @@ def update_discovery_config():
         config.MAX_CHANNELS_TO_PROCESS = config_updates['max_channels']
 
     return jsonify({"success": True, "message": "Configuration updated"})
+
+# ============================================================
+# ENVIRONMENT VARIABLES / CREDENTIALS ROUTES
+# ============================================================
+
+@dashboard_bp.route("/api/env", methods=["POST"])
+def set_env_vars():
+    """Save environment variables to .env file"""
+    try:
+        data = request.get_json() or {}
+        allowed_keys = ["YOUTUBE_API_KEY", "GMAIL_USER", "GMAIL_APP_PASSWORD"]
+        
+        # Get path to .env file in youtube-lead-finder directory
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        env_path = os.path.join(project_root, ".env")
+        
+        # Load existing .env content
+        existing_vars = {}
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, value = line.split("=", 1)
+                        existing_vars[key.strip()] = value.strip()
+        
+        # Update with new values
+        for key in allowed_keys:
+            if key in data and data[key]:
+                existing_vars[key] = data[key]
+        
+        # Write back to .env
+        with open(env_path, "w", encoding="utf-8") as f:
+            for key, value in existing_vars.items():
+                f.write(f"{key}={value}\n")
+        
+        # Update runtime environment variables immediately
+        for key in allowed_keys:
+            if key in existing_vars:
+                os.environ[key] = existing_vars[key]
+        
+        return jsonify({"success": True, "message": "Credentials saved successfully"})
+    
+    except Exception as e:
+        print(f"Error saving .env file: {e}")
+        return jsonify({"error": f"Failed to save credentials: {str(e)}"}), 500
+
+@dashboard_bp.route("/api/env", methods=["GET"])
+def get_env_vars():
+    """Fetch saved environment variables"""
+    try:
+        allowed_keys = ["YOUTUBE_API_KEY", "GMAIL_USER", "GMAIL_APP_PASSWORD"]
+        
+        # Build response with current env vars
+        credentials = {}
+        for key in allowed_keys:
+            value = os.getenv(key)
+            credentials[key] = value if value else ""
+        
+        return jsonify(credentials)
+    
+    except Exception as e:
+        print(f"Error fetching credentials: {e}")
+        return jsonify({"error": f"Failed to fetch credentials: {str(e)}"}), 500
