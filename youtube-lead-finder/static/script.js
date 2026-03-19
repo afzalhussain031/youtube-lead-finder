@@ -1,6 +1,8 @@
 let leadsData = [];
 let filteredLeads = []; // For search filtering
 let activeFilter = "all"; // Track active filter (all, pending, sent)
+let sortConfig = { key: null, direction: 'asc' }; // For column sorting
+let activeTags = new Set(); // For multi-filters like high-score
 
 // ================================================================
 // SEND OPERATION STATE MANAGER
@@ -114,7 +116,10 @@ function closeCredsModal() {
 // ERROR MODAL MANAGEMENT (NEW)
 // ================================================================
 
+let lastErrorData = null; // Store last error payload for copy/download actions
+
 function showErrorModal(errorData) {
+  lastErrorData = errorData || {};
   const overlay = document.getElementById("error-modal-overlay");
 
   if (!overlay) {
@@ -144,8 +149,10 @@ function showErrorModal(errorData) {
   const solutionsList = document.getElementById("error-solutions");
   if (solutionsList) {
     solutionsList.innerHTML = "";
-    if (errorData.solutions && Array.isArray(errorData.solutions)) {
-      errorData.solutions.forEach((solution) => {
+    const solutions =
+      errorData.recommended_actions || errorData.solutions || [];
+    if (Array.isArray(solutions) && solutions.length > 0) {
+      solutions.forEach((solution) => {
         const li = document.createElement("li");
         li.textContent = solution;
         solutionsList.appendChild(li);
@@ -159,8 +166,28 @@ function showErrorModal(errorData) {
 
   // Show raw error for debugging (hidden by default in details)
   const rawDetailsEl = document.getElementById("error-raw-details");
-  if (rawDetailsEl && errorData.raw_error) {
-    rawDetailsEl.textContent = errorData.raw_error;
+  if (rawDetailsEl) {
+    rawDetailsEl.textContent =
+      errorData.raw_error ||
+      errorData.error_log ||
+      "No raw error details available.";
+  }
+
+  // Configure quick-fix button
+  const quickFixBtn = document.getElementById("error-quickfix-btn");
+  if (quickFixBtn) {
+    if (errorData.quick_fix) {
+      quickFixBtn.classList.remove("hidden");
+      if (errorData.quick_fix === "open_credentials") {
+        quickFixBtn.textContent = "🔑 Fix credentials";
+      } else if (errorData.quick_fix === "open_quota_help") {
+        quickFixBtn.textContent = "🧮 Check quota";
+      } else {
+        quickFixBtn.textContent = "⚡ Take action";
+      }
+    } else {
+      quickFixBtn.classList.add("hidden");
+    }
   }
 
   // Show modal
@@ -171,6 +198,99 @@ function showErrorModal(errorData) {
 function closeErrorModal() {
   const overlay = document.getElementById("error-modal-overlay");
   overlay.classList.add("hidden");
+}
+
+function copyErrorDetails() {
+  if (!lastErrorData) {
+    showToast("No error details available to copy", "warning");
+    return;
+  }
+
+  const payload = {
+    type: lastErrorData.error_type,
+    message: lastErrorData.message,
+    raw_error: lastErrorData.raw_error,
+    solutions:
+      lastErrorData.solutions || lastErrorData.recommended_actions || [],
+    log: lastErrorData.error_log || "",
+  };
+
+  const text = JSON.stringify(payload, null, 2);
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => showToast("Error details copied to clipboard", "success"))
+      .catch((err) => {
+        console.error("Failed to copy error details", err);
+        showToast("Could not copy error details", "error");
+      });
+  } else {
+    // Fallback: create a temporary textarea
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      showToast("Error details copied to clipboard", "success");
+    } catch (err) {
+      showToast("Could not copy error details", "error");
+    }
+    document.body.removeChild(textarea);
+  }
+}
+
+function downloadErrorLog() {
+  if (!lastErrorData) {
+    showToast("No error details available to download", "warning");
+    return;
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const filename = `discovery-error-${timestamp}.txt`;
+
+  const lines = [];
+  lines.push(`Error Type: ${lastErrorData.error_type || "Unknown"}`);
+  lines.push(`Message: ${lastErrorData.message || "No message"}`);
+  lines.push("");
+  lines.push("Raw Error:");
+  lines.push(lastErrorData.raw_error || "(none)");
+  lines.push("");
+  lines.push("Recommended Actions:");
+  const solutions =
+    lastErrorData.recommended_actions || lastErrorData.solutions || [];
+  solutions.forEach((s) => lines.push(`- ${s}`));
+  lines.push("");
+  lines.push("Error Log:");
+  lines.push(lastErrorData.error_log || "(no additional log)");
+
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function handleErrorQuickFix() {
+  if (!lastErrorData || !lastErrorData.quick_fix) {
+    return;
+  }
+
+  const action = lastErrorData.quick_fix;
+  if (action === "open_credentials") {
+    closeErrorModal();
+    openCredsModal();
+  } else if (action === "open_quota_help") {
+    closeErrorModal();
+    showToast("Quota exceeded. Check your API usage or reset quota.", "info");
+  } else {
+    closeErrorModal();
+  }
 }
 
 // ================================================================
@@ -1127,11 +1247,13 @@ function renderTable() {
   table.classList.remove("hidden");
 
   filteredLeads.forEach((lead) => {
-    const row = document.createElement("tr");
     const isContacted = lead.contacted;
-
-    row.className = "table-row";
-    row.innerHTML = `
+    const emailSanitized = (lead.email || Math.random().toString()).replace(/[^a-zA-Z0-9]/g, '-');
+    
+    // Main Row
+    const mainRow = document.createElement("tr");
+    mainRow.className = "table-row border-b border-gray-100 hover:bg-gray-50 transition";
+    mainRow.innerHTML = `
       <td class="table-cell">
         <input 
           type="checkbox" 
@@ -1139,10 +1261,17 @@ function renderTable() {
           data-email="${lead.email}" 
           ${isContacted ? "disabled" : ""}>
       </td>
-      <td class="table-cell">${lead.email}</td>
-      <td class="table-cell">${lead.channel_name}</td>
+      <td class="table-cell font-medium cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1" onclick="toggleDetails('${emailSanitized}')">
+        <span class="text-xs">▶</span> ${lead.channel_name || 'N/A'}
+      </td>
+      <td class="table-cell text-sm text-gray-600">${lead.email || 'N/A'}</td>
+      <td class="table-cell text-sm">${Number(lead.subscribers || 0).toLocaleString()}</td>
+      <td class="table-cell text-sm">${Number(lead.avg_views || 0).toLocaleString()}</td>
+      <td class="table-cell text-sm font-semibold text-indigo-600">${lead.score || 0}</td>
+      <td class="table-cell text-sm"><span class="px-2 py-1 bg-gray-100 rounded-full">${lead.niche || 'N/A'}</span></td>
+      <td class="table-cell text-sm text-gray-500">${lead.country || 'N/A'}</td>
       <td class="table-cell">
-        <span class="${isContacted ? "badge-sent" : "badge-pending"}">
+        <span class="${isContacted ? "badge-sent" : "badge-pending"} text-xs">
           ${isContacted ? "✓ Sent" : "⏳ Pending"}
         </span>
       </td>
@@ -1150,15 +1279,67 @@ function renderTable() {
         <button
           data-email="${lead.email}"
           data-channel="${lead.channel_name}"
-          class="${isContacted ? "btn-secondary" : "btn-primary"} btn-sm"
+          class="${isContacted ? "btn-secondary" : "btn-primary"} px-3 py-1 text-xs"
           ${isContacted ? "disabled" : ""}>
           ${isContacted ? "Sent" : "Send"}
         </button>
       </td>
     `;
-    tbody.appendChild(row);
+    
+    // Detail Row
+    const detailRow = document.createElement("tr");
+    detailRow.id = `detail-${emailSanitized}`;
+    detailRow.className = "hidden bg-blue-50/30 border-b border-gray-200";
+    
+    const channelLink = lead.channel_link && lead.channel_link !== 'N/A' 
+      ? lead.channel_link 
+      : (lead.channel_id && lead.channel_id !== 'N/A' && lead.channel_id !== '' 
+          ? `https://youtube.com/channel/${lead.channel_id}` 
+          : `https://www.youtube.com/results?search_query=${encodeURIComponent(lead.channel_name)}`);
+      
+    detailRow.innerHTML = `
+      <td colspan="10" class="p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">Channel Description</h4>
+            <div class="text-gray-600 bg-white p-3 border rounded overflow-y-auto max-h-32 mb-3 text-xs leading-relaxed shadow-sm">
+              ${lead.about_snippet || 'No description available.'}
+            </div>
+            
+            <a href="${channelLink}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1 transition">
+               🔗 Open Channel on YouTube
+            </a>
+          </div>
+          <div>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div class="bg-white p-3 border rounded shadow-sm text-xs">
+                <span class="block text-gray-500 mb-1">Total Views</span>
+                <span class="font-semibold text-gray-800 text-sm">${Number(lead.total_views || 0).toLocaleString()}</span>
+              </div>
+              <div class="bg-white p-3 border rounded shadow-sm text-xs">
+                <span class="block text-gray-500 mb-1">Video Count</span>
+                <span class="font-semibold text-gray-800 text-sm">${Number(lead.video_count || 0).toLocaleString()}</span>
+              </div>
+              <div class="bg-white p-3 border rounded shadow-sm text-xs">
+                <span class="block text-gray-500 mb-1">Uploads/Week</span>
+                <span class="font-semibold text-indigo-600 text-sm">${Number(lead.upload_freq || 0).toFixed(1)}</span>
+              </div>
+              <div class="bg-white p-3 border rounded shadow-sm text-xs">
+                <span class="block text-gray-500 mb-1">Target Score</span>
+                <span class="font-bold text-green-600 text-sm">${lead.score || 0}<span class="text-gray-400 font-normal">/100</span></span>
+              </div>
+            </div>
+            
+          </div>
+          </div>
+        </div>
+      </td>
+    `;
+    
+    tbody.appendChild(mainRow);
+    tbody.appendChild(detailRow);
 
-    const button = row.querySelector("button[data-email]");
+    const button = mainRow.querySelector("button[data-email]");
     if (button && !isContacted) {
       button.addEventListener("click", function () {
         sendSingleEmail(this.dataset.email, this.dataset.channel, this);
@@ -1170,33 +1351,155 @@ function renderTable() {
   updateSelectedCount();
 }
 
-// Combined filter function for search + status
+function toggleDetails(emailSanitized) {
+  const detailRow = document.getElementById(`detail-${emailSanitized}`);
+  if (detailRow) {
+    detailRow.classList.toggle('hidden');
+    // Simple rotation animation for the caret
+    const prevRow = detailRow.previousElementSibling;
+    if (prevRow) {
+      const caret = prevRow.querySelector('td:nth-child(2) span');
+      if (caret) {
+        caret.textContent = detailRow.classList.contains('hidden') ? '▶' : '▼';
+      }
+    }
+  }
+}
+
+// Download Filtered CSV functionality
+function downloadFilteredCSV() {
+  if (filteredLeads.length === 0) {
+    showToast("No leads matching filters to download.", "warning");
+    return;
+  }
+  
+  // Expose extended fields to CSV downloaded from UI
+  const headers = ['channel_name', 'subscribers', 'avg_views', 'email', 'score', 'niche', 'country', 'status', 'channel_link'];
+  
+  const csvRows = [headers.join(',')];
+  
+  filteredLeads.forEach(lead => {
+    const row = [
+      `"${(lead.channel_name || '').replace(/"/g, '""')}"`,
+      lead.subscribers || 0,
+      lead.avg_views || 0,
+      `"${(lead.email || '').replace(/"/g, '""')}"`,
+      lead.score || 0,
+      `"${(lead.niche || '').replace(/"/g, '""')}"`,
+      `"${(lead.country || 'N/A').replace(/"/g, '""')}"`,
+      lead.contacted ? 'Sent' : 'Pending',
+      `"${(lead.channel_link || '').replace(/"/g, '""')}"`
+    ];
+    csvRows.push(row.join(','));
+  });
+  
+  const csvString = csvRows.join('\n');
+  const blob = new Blob([csvString], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  
+  let filename = 'leads_export';
+  if (activeFilter !== 'all') filename += `_${activeFilter}`;
+  if (activeTags.has('high-score')) filename += '_highscore';
+  filename += '.csv';
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Tag/Pill toggling
+function toggleTag(tag) {
+  const btn = document.getElementById(`tag-${tag}`);
+  if (activeTags.has(tag)) {
+    activeTags.delete(tag);
+    btn.classList.remove('bg-blue-100', 'border-blue-300', 'text-blue-800');
+    btn.classList.add('bg-white', 'border-gray-300', 'text-gray-600');
+    btn.dataset.active = "false";
+  } else {
+    activeTags.add(tag);
+    btn.classList.remove('bg-white', 'border-gray-300', 'text-gray-600');
+    btn.classList.add('bg-blue-100', 'border-blue-300', 'text-blue-800');
+    btn.dataset.active = "true";
+  }
+  applyFilters();
+}
+
+// Column sorting handler
+function handleSort(key) {
+  let direction = 'asc';
+  if (sortConfig.key === key && sortConfig.direction === 'asc') {
+    direction = 'desc';
+  }
+  sortConfig = { key, direction };
+  
+  // Unset arrows securely
+  document.querySelectorAll('th span[id^="sort-"]').forEach(el => el.textContent = '↕️');
+  const sortIcon = document.getElementById(`sort-${key}`);
+  if (sortIcon) sortIcon.textContent = direction === 'asc' ? '↑' : '↓';
+  
+  applyFilters();
+}
+
+// Combined filter function for search + status + tags + niche + sorting
 function applyFilters() {
-  const searchQuery = document
-    .getElementById("search-input")
-    .value.toLowerCase();
+  const searchQuery = document.getElementById("search-input").value.toLowerCase();
+  const nicheSelect = document.getElementById("filter-niche");
+  const activeNiche = nicheSelect ? nicheSelect.value : "all";
 
   filteredLeads = leadsData.filter((lead) => {
     // 1. Apply status filter
-    if (activeFilter === "pending" && lead.contacted) return false; // Hide contacted
-    if (activeFilter === "sent" && !lead.contacted) return false; // Hide pending
-    // activeFilter === "all" shows everything
+    if (activeFilter === "pending" && lead.contacted) return false;
+    if (activeFilter === "sent" && !lead.contacted) return false;
 
-    // 2. Apply search filter
+    // 2. Apply tag filters
+    if (activeTags.has('high-score') && Number(lead.score || 0) <= 70) return false;
+    if (activeTags.has('has-email') && (!lead.email || lead.email === 'N/A' || lead.email.trim() === '')) return false;
+
+    // 3. Apply niche filter
+    if (activeNiche !== "all" && lead.niche !== activeNiche) return false;
+
+    // 4. Apply search filter
     const matchesSearch =
-      lead.email.toLowerCase().includes(searchQuery) ||
-      lead.channel_name.toLowerCase().includes(searchQuery);
+      (lead.email && lead.email.toLowerCase().includes(searchQuery)) ||
+      (lead.channel_name && lead.channel_name.toLowerCase().includes(searchQuery));
 
     return matchesSearch;
   });
 
-  // 3. Sort: pending leads first, sent leads at end (alphabetically within each group)
-  filteredLeads.sort((a, b) => {
-    if (a.contacted !== b.contacted) {
-      return a.contacted ? 1 : -1; // Pending (false) first, Sent (true) last
-    }
-    return a.email.localeCompare(b.email); // Alphabetical within same status
-  });
+  // 5. Apply sorting
+  if (sortConfig.key) {
+    filteredLeads.sort((a, b) => {
+      let valA = a[sortConfig.key];
+      let valB = b[sortConfig.key];
+      
+      // Handle numerical sort
+      if (!isNaN(valA) && !isNaN(valB)) {
+        valA = Number(valA || 0);
+        valB = Number(valB || 0);
+        return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+      }
+      
+      // Handle string sort
+      valA = String(valA || '').toLowerCase();
+      valB = String(valB || '').toLowerCase();
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  } else {
+    // Default sort: pending leads first, sent leads at end
+    filteredLeads.sort((a, b) => {
+      if (a.contacted !== b.contacted) {
+        return a.contacted ? 1 : -1; // Pending (false) first, Sent (true) last
+      }
+      return String(a.email || '').localeCompare(String(b.email || ''));
+    });
+  }
 
   renderTable();
 }

@@ -223,8 +223,6 @@ class DiscoveryService:
                     progress = 65 + (batch_num / total_batches) * 30  # 65-95%
                     self.status['progress'] = int(progress)
 
-                    self.add_log(f'Processing batch {batch_num}/{total_batches}: {len(batch)} channels')
-
                     batch_results = channel_analyzer.analyze_channels_batch(batch)
                     analyzed_channels.extend(batch_results)
 
@@ -344,6 +342,18 @@ class DiscoveryService:
                 "Contact support with the error details"
             ]
 
+        # Determine quick-fix action for some errors
+        quick_fix = None
+        if error_type == "API Authentication Failed":
+            quick_fix = "open_credentials"
+        elif error_type == "API Quota Exceeded":
+            quick_fix = "open_quota_help"
+
+        # Build a human-friendly error log snapshot
+        error_log = "\n".join(
+            [f"[{l['timestamp']}] {l['level'].upper()}: {l['message']}" for l in self.status.get('logs', [])]
+        )
+
         # Update status with error info
         self.status.update({
             'is_running': False,
@@ -353,7 +363,9 @@ class DiscoveryService:
             'error_details': {
                 'message': error_message,
                 'solutions': solutions,
-                'raw_error': error_str
+                'raw_error': error_str,
+                'error_log': error_log,
+                'quick_fix': quick_fix
             }
         })
 

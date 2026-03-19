@@ -363,30 +363,31 @@
           </div>
 
           <!-- Filter Tabs -->
-          <div class="flex flex-wrap gap-small border-t pt-4">
-            <button
-              id="filter-all"
-              class="filter-tab filter-tab-active"
-              data-filter="all"
-              title="Show all leads"
-            >
-              📋 All
-            </button>
-            <button
-              id="filter-pending"
-              class="filter-tab filter-tab-inactive"
-              data-filter="pending"
-              title="Show unsent leads"
-            >
-              ⏳ Pending
-            </button>
-            <button
-              id="filter-sent"
-              class="filter-tab filter-tab-inactive"
-              data-filter="sent"
-              title="Show sent leads"
-            >
-              ✅ Sent
+          <div class="flex flex-wrap gap-3 border-t pt-4 items-center">
+            <span class="text-sm font-semibold text-gray-700">Status:</span>
+            <button id="filter-all" class="filter-tab filter-tab-active" data-filter="all" title="Show all leads">📋 All</button>
+            <button id="filter-pending" class="filter-tab filter-tab-inactive" data-filter="pending" title="Show unsent leads">⏳ Pending</button>
+            <button id="filter-sent" class="filter-tab filter-tab-inactive" data-filter="sent" title="Show sent leads">✅ Sent</button>
+            
+            <div class="hidden sm:block h-6 w-px bg-gray-300 mx-1"></div>
+            
+            <span class="text-sm font-semibold text-gray-700">Tags:</span>
+            <button id="tag-high-score" class="px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-gray-50 transition" onclick="toggleTag('high-score')" data-active="false" title="Score > 70">⭐ High Score</button>
+            <button id="tag-has-email" class="px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-gray-50 transition" onclick="toggleTag('has-email')" data-active="false" title="Has Email">📧 Has Email</button>
+            
+            <div class="hidden sm:block h-6 w-px bg-gray-300 mx-1"></div>
+            
+            <select id="filter-niche" class="p-1 text-sm border border-gray-300 rounded bg-white text-gray-700" onchange="applyFilters()" title="Filter by Niche">
+              <option value="all">All Niches</option>
+              <option value="gaming">Gaming</option>
+              <option value="tech">Tech</option>
+              <option value="fitness">Fitness</option>
+              <option value="podcast">Podcast</option>
+              <option value="general">General</option>
+            </select>
+            
+            <button id="download-csv-btn" class="ml-auto text-sm px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded font-medium transition" onclick="downloadFilteredCSV()" title="Download matching leads">
+              📥 Download CSV
             </button>
           </div>
         </div>
@@ -488,20 +489,24 @@
             <tr class="bg-gray-50 border-b border-gray-200">
               <!-- Checkbox Column -->
               <th class="table-header w-10">
-                <input
-                  type="checkbox"
-                  id="select-all"
-                  class="checkbox-custom"
-                  title="Select all leads"
-                  aria-label="Select all leads"
-                />
+                <input type="checkbox" id="select-all" class="checkbox-custom" title="Select all leads" aria-label="Select all leads" />
               </th>
-              <!-- Email Column -->
-              <th class="table-header">Email Address</th>
               <!-- Channel Column -->
-              <th class="table-header">Channel Name</th>
+              <th class="table-header cursor-pointer hover:bg-gray-200 transition" onclick="handleSort('channel_name')">Channel Name <span id="sort-channel_name" class="text-xs text-gray-400">↕️</span></th>
+              <!-- Email Column -->
+              <th class="table-header cursor-pointer hover:bg-gray-200 transition" onclick="handleSort('email')">Email Address <span id="sort-email" class="text-xs text-gray-400">↕️</span></th>
+              <!-- Subscribers Column -->
+              <th class="table-header cursor-pointer hover:bg-gray-200 transition" onclick="handleSort('subscribers')">Subs <span id="sort-subscribers" class="text-xs text-gray-400">↕️</span></th>
+              <!-- Avg Views Column -->
+              <th class="table-header cursor-pointer hover:bg-gray-200 transition" onclick="handleSort('avg_views')">Avg Views <span id="sort-avg_views" class="text-xs text-gray-400">↕️</span></th>
+              <!-- Score Column -->
+              <th class="table-header cursor-pointer hover:bg-gray-200 transition" onclick="handleSort('score')">Score <span id="sort-score" class="text-xs text-gray-400">↕️</span></th>
+              <!-- Niche Column -->
+              <th class="table-header cursor-pointer hover:bg-gray-200 transition" onclick="handleSort('niche')">Niche <span id="sort-niche" class="text-xs text-gray-400">↕️</span></th>
+              <!-- Country Column -->
+              <th class="table-header cursor-pointer hover:bg-gray-200 transition" onclick="handleSort('country')">Country <span id="sort-country" class="text-xs text-gray-400">↕️</span></th>
               <!-- Status Column -->
-              <th class="table-header">Status</th>
+              <th class="table-header cursor-pointer hover:bg-gray-200 transition" onclick="handleSort('status')">Status <span id="sort-status" class="text-xs text-gray-400">↕️</span></th>
               <!-- Action Column -->
               <th class="table-header text-center">Action</th>
             </tr>
@@ -1114,7 +1119,7 @@
         </details>
 
         <!-- Actions -->
-        <div class="flex gap-3">
+        <div class="flex flex-col sm:flex-row gap-3">
           <button
             id="error-retry-btn"
             class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition"
@@ -1126,6 +1131,20 @@
             🔄 Retry Discovery
           </button>
           <button
+            id="error-copy-btn"
+            class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded font-medium transition"
+            onclick="copyErrorDetails()"
+          >
+            📋 Copy Error Details
+          </button>
+          <button
+            id="error-download-btn"
+            class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded font-medium transition"
+            onclick="downloadErrorLog()"
+          >
+            💾 Download Log
+          </button>
+          <button
             id="error-close-btn"
             class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded font-medium transition"
             onclick="closeErrorModal()"
@@ -1134,15 +1153,13 @@
           </button>
         </div>
 
-        <!-- Link to credentials -->
+        <!-- Quick Fix (conditional) -->
         <button
-          class="w-full mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
-          onclick="
-            closeErrorModal();
-            openCredsModal();
-          "
+          id="error-quickfix-btn"
+          class="w-full mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium hidden"
+          onclick="handleErrorQuickFix()"
         >
-          ⚙️ Update API Credentials
+          ⚡ Take action
         </button>
       </div>
     </div>

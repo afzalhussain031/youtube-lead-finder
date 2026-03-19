@@ -25,10 +25,26 @@ def load_leads():
     with open(LEADS_FILE, newline='', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            email = row["email"].strip().lower()  # ✅ Normalize to lowercase
-            leads.append({
-                "email": email,
-                "channel_name": row["channel_name"].strip(),
-                "contacted": email in sent,
-            })
+            email = row.get("email", "").strip().lower()  # ✅ Normalize to lowercase
+            
+            lead_data = dict(row)
+            lead_data["email"] = email
+            lead_data["channel_name"] = row.get("channel_name", "").strip()
+            lead_data["contacted"] = email in sent
+            
+            # Ensure defaults for expanded columns if missing in old CSV
+            lead_data.setdefault("channel_id", "")
+            lead_data.setdefault("total_views", 0)
+            lead_data.setdefault("video_count", 0)
+            lead_data.setdefault("upload_freq", 0)
+            lead_data.setdefault("subscribers", 0)
+            lead_data.setdefault("avg_views", 0)
+            lead_data.setdefault("score", 0)
+            lead_data.setdefault("niche", "N/A")
+            lead_data.setdefault("country", "N/A")
+            lead_data.setdefault("about_snippet", "N/A")
+            lead_data.setdefault("channel_link", "N/A")
+            lead_data.setdefault("extracted_emails", "N/A")
+
+            leads.append(lead_data)
     return leads

@@ -90,7 +90,9 @@ class ChannelAnalyzer:
                 'email': email,
                 'upload_freq': upload_freq,
                 'country': country,
-                'niche': self._classify_niche(description)
+                'niche': self._classify_niche(description),
+                'about_snippet': description[:1000] + ('...' if len(description) > 1000 else ''),
+                'channel_link': f'https://youtube.com/channel/{channel_id}'
             }
 
         except Exception as e:

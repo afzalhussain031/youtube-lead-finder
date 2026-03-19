@@ -16,54 +16,11 @@ Below are **concrete UI/UX improvements** you can make to this project, grouped 
 
 ---
 
-## 1) Discovery / Search Flow (Core UX)
 
-### 1.1 Make Discovery “One Click” / More Intuitive
-**Current:** discovery is a button that starts background processing, but the flow isn’t obvious to new users.
 
-**Improvements:**
-- **Add a “Run Discovery” wizard:** show current config (keywords count, region, language, min subs, max subs, quota status) and a “Start” button.
-- **Add confirm dialog** (to avoid accidental long runs).
-- **Show “next steps” after completion** (e.g., “Click here to view leads” / “Download CSV”).
 
-**Where to change:**
-- `templates/index.html` (UI layout)
-- `static/script.js` (trigger + status updates)
 
----
 
-### 1.2 Discovery Progress Should Be More Informative
-**Current:** shows percent + small stats, but doesn’t show:
-- current keyword being processed
-- estimated time remaining
-- API quota consumption in real time
-
-**Improvements:**
-- Add “Currently searching keyword…” section.
-- Show **API units spent per step** (e.g., “Search: 100 units, Channels: 20 units”).
-- Add a **cancel button that is smarter** (shows “canceling…” until thread stops).
-
-**Where to change:**
-- `services/discovery_service.py` → add fields like `current_keyword`, `quota_spent_this_run`
-- `routes/dashboard.py` → include those fields in `/api/discovery/status`
-- `static/script.js` → render the fields in the discovery section.
-
----
-
-### 1.3 Better Feedback When Discovery Fails
-**Current:** error modal appears when an error is detected, but it can be a generic window.
-
-**Improvements:**
-- Show a **“What to do next” checklist** based on error type (quota, auth, network).
-- Add an option to **download the error log** or “Copy error details”.
-- Provide a **quick fix button** (e.g., open credentials modal if auth fails).
-
-**Where to change:**
-- `services/discovery_service.py` → expand `error_details` with “recommended action” steps and a `copyable` raw message
-- `templates/index.html` → add “copy error” button to modal
-- `static/script.js` → implement copy-to-clipboard & conditional guidance.
-
----
 
 ## 2) Lead Table Improvements (Core Data Display)
 
