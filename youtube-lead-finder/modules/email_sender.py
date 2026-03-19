@@ -80,6 +80,37 @@ def send_personalized_email(to_email, channel_name):
     except Exception as e:
         print(f"Failed to send email to {to_email}: {str(e)}")
         return False
+        
+def send_test_email(to_email, subject, body):
+    """Send a test email with the provided subject and body directly."""
+    try:
+        # Get credentials at runtime
+        gmail_user, gmail_password = get_gmail_credentials()
+        
+        if not gmail_user or not gmail_password:
+            return {"success": False, "message": "Gmail credentials not configured"}
+        
+        # Set up the email
+        msg = MIMEMultipart()
+        msg['From'] = gmail_user
+        msg['To'] = to_email
+        msg['Subject'] = subject
+
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Connect to Gmail SMTP
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls() #Secures the connection
+        server.login(gmail_user, gmail_password)
+
+        # Send the email
+        server.sendmail(gmail_user, to_email, msg.as_string())
+        server.quit()
+
+        return {"success": True, "message": "Test email sent successfully"}
+    except Exception as e:
+        print(f"Failed to send test email to {to_email}: {str(e)}")
+        return {"success": False, "message": str(e)}
     
 def send_email_from_leads():
     """Read leads.csv and send emails to each lead individually."""

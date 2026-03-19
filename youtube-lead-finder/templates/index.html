@@ -765,10 +765,16 @@
         class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
       >
         <h3 class="text-lg font-semibold mb-4">📧 Manage Email Templates</h3>
-        <p class="text-sm text-gray-600 mb-4">
-          Create and manage email templates with variations. Each variation
-          separated by | will be randomly selected.
-        </p>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+          <p class="text-sm text-gray-600 flex-1">
+            Create and manage email templates with variations. Each variation
+            separated by | will be randomly selected.
+          </p>
+          <div class="relative w-full md:w-64">
+            <input type="text" id="template-search-input" class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Search templates..." onkeyup="filterTemplates()">
+            <span class="absolute left-2.5 top-2.5 text-gray-400 text-sm">🔍</span>
+          </div>
+        </div>
 
         <!-- Templates List -->
         <div
@@ -951,6 +957,16 @@
                 {channel_name} replaced with "Sample Channel"
               </div>
             </div>
+            
+            <!-- Send Test Email Section -->
+            <div class="mt-4 bg-gray-50 p-4 rounded border border-gray-200">
+              <h4 class="font-semibold mb-2 text-sm text-gray-800">✉️ Send Test Email</h4>
+              <p class="text-xs text-gray-500 mb-3">Send the current preview to yourself to check formatting.</p>
+              <div class="flex gap-2">
+                <input type="email" id="test-email-address" class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="your@email.com" />
+                <button class="px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 rounded-md text-sm font-semibold transition whitespace-nowrap" onclick="sendTestEmail()">Send Test</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1034,14 +1050,37 @@
           discovery.
         </p>
 
-        <!-- Keywords Textarea -->
+        <!-- Keywords Input Area -->
         <div class="mb-4">
-          <label class="block text-sm font-medium mb-2">Keywords</label>
-          <textarea
-            id="keywords-textarea"
-            class="w-full p-3 border border-gray-300 rounded font-mono text-sm h-64"
-            placeholder="gaming&#10;tech review&#10;product review&#10;gadget review"
-          ></textarea>
+          <label class="block text-sm font-medium mb-1 text-gray-700">Add Keyword</label>
+          <div class="flex gap-2 mb-3">
+            <input
+              type="text"
+              id="new-keyword-input"
+              class="flex-1 px-3 py-2 border border-gray-300 rounded font-medium text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              placeholder="e.g. gaming, tech review"
+              onkeypress="if(event.key === 'Enter') { event.preventDefault(); addKeywordFromInput(); }"
+            />
+            <button class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-medium rounded transition shadow-sm" onclick="addKeywordFromInput()">
+              Add
+            </button>
+          </div>
+          
+          <label class="block text-sm font-medium mb-2 text-gray-700">Active Keywords</label>
+          <div id="keywords-container" class="flex flex-wrap gap-2 p-4 border border-gray-200 rounded min-h-[120px] max-h-64 overflow-y-auto bg-gray-50 shadow-inner">
+            <!-- Keywords rendered here as chips -->
+          </div>
+        </div>
+
+        <!-- Recommended Area -->
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Recommended Additions</label>
+          <div class="flex flex-wrap gap-2" id="recommended-keywords">
+            <button class="px-3 py-1 bg-white text-gray-600 hover:text-blue-600 hover:border-blue-300 text-xs rounded-full cursor-pointer transition border border-gray-300 shadow-sm" onclick="addKeyword('software review')">+ software review</button>
+            <button class="px-3 py-1 bg-white text-gray-600 hover:text-blue-600 hover:border-blue-300 text-xs rounded-full cursor-pointer transition border border-gray-300 shadow-sm" onclick="addKeyword('hardware testing')">+ hardware testing</button>
+            <button class="px-3 py-1 bg-white text-gray-600 hover:text-blue-600 hover:border-blue-300 text-xs rounded-full cursor-pointer transition border border-gray-300 shadow-sm" onclick="addKeyword('unboxing')">+ unboxing</button>
+            <button class="px-3 py-1 bg-white text-gray-600 hover:text-blue-600 hover:border-blue-300 text-xs rounded-full cursor-pointer transition border border-gray-300 shadow-sm" onclick="addKeyword('gameplay')">+ gameplay</button>
+          </div>
         </div>
 
         <!-- Keywords Count -->

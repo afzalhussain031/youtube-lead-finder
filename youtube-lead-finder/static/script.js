@@ -313,24 +313,16 @@ function closeKeywordsModal() {
   }
 }
 
+let activeKeywords = [];
+
 async function loadKeywords() {
   try {
     const response = await fetch("/api/keywords", { method: "GET" });
     const data = await response.json();
 
     if (data.success && data.keywords) {
-      const textarea = document.getElementById("keywords-textarea");
-      const countEl = document.getElementById("keywords-count");
-
-      if (textarea) {
-        // Join keywords with newlines for display
-        textarea.value = data.keywords.join("\n");
-      }
-
-      if (countEl) {
-        countEl.textContent = data.keywords.length;
-      }
-
+      activeKeywords = [...data.keywords];
+      renderKeywordChips();
       console.log("✅ Keywords loaded:", data.keywords.length, "keywords");
     } else {
       console.error("❌ Failed to load keywords:", data.message);
@@ -342,22 +334,60 @@ async function loadKeywords() {
   }
 }
 
+function renderKeywordChips() {
+  const container = document.getElementById("keywords-container");
+  const countEl = document.getElementById("keywords-count");
+  if (!container) return;
+  
+  container.innerHTML = "";
+  
+  if (activeKeywords.length === 0) {
+    container.innerHTML = '<span class="text-gray-400 text-sm italic py-2">No keywords added yet.</span>';
+  } else {
+    activeKeywords.forEach((kw, index) => {
+      const chip = document.createElement("div");
+      chip.className = "flex items-center gap-1 bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm shadow-sm transition hover:bg-gray-50";
+      chip.innerHTML = `
+        <span class="font-medium">${kw}</span>
+        <button class="text-gray-400 hover:text-red-500 ml-1 cursor-pointer focus:outline-none transition font-bold" onclick="removeKeyword(${index})" title="Remove">✕</button>
+      `;
+      container.appendChild(chip);
+    });
+  }
+  
+  if (countEl) countEl.textContent = activeKeywords.length;
+}
+
+function addKeywordFromInput() {
+  const input = document.getElementById("new-keyword-input");
+  if (!input) return;
+  addKeyword(input.value);
+  input.value = "";
+  input.focus();
+}
+
+function addKeyword(keywordStr) {
+  const kw = keywordStr.trim();
+  if (!kw) return;
+  
+  // Validation for duplicates
+  if (activeKeywords.map(k => k.toLowerCase()).includes(kw.toLowerCase())) {
+    showToast(`Keyword "${kw}" already exists.`, "warning");
+    return;
+  }
+  
+  activeKeywords.push(kw);
+  renderKeywordChips();
+}
+
+function removeKeyword(index) {
+  activeKeywords.splice(index, 1);
+  renderKeywordChips();
+}
+
 async function saveKeywords() {
   try {
-    const textarea = document.getElementById("keywords-textarea");
-    if (!textarea) {
-      console.error("❌ Keywords textarea not found");
-      return;
-    }
-
-    // Parse keywords from textarea (split by newline, filter empty lines)
-    const keywordsText = textarea.value.trim();
-    const keywords = keywordsText
-      .split("\n")
-      .map((k) => k.trim())
-      .filter((k) => k.length > 0);
-
-    if (keywords.length === 0) {
+    if (activeKeywords.length === 0) {
       showToast("Please enter at least one keyword", "warning");
       return;
     }
@@ -366,18 +396,21 @@ async function saveKeywords() {
     const response = await fetch("/api/keywords", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ keywords: keywords }),
+      body: JSON.stringify({ keywords: activeKeywords }),
     });
 
     const data = await response.json();
 
     if (data.success) {
-      console.log("✅ Keywords saved successfully:", keywords.length);
+      console.log("✅ Keywords saved successfully:", activeKeywords.length);
       showToast(
-        `✅ Saved ${keywords.length} keywords successfully!`,
+        `✅ Saved ${activeKeywords.length} keywords successfully!`,
         "success",
       );
       closeKeywordsModal();
+      
+      const wizardCount = document.getElementById("wizard-keywords-count");
+      if (wizardCount) wizardCount.textContent = `${activeKeywords.length} words`;
     } else {
       console.error("❌ Failed to save keywords:", data.message);
       showToast("Failed to save keywords: " + data.message, "error");
@@ -426,18 +459,48 @@ function toggleTemplateForm() {
   }
 }
 
+let loadedTemplates = [];
+
 async function loadTemplates() {
   try {
     const response = await fetch("/api/templates", { method: "GET" });
     const data = await response.json();
 
     if (data.success && data.templates) {
-      const listContainer = document.getElementById("templates-list");
-      if (!listContainer) return;
+      loadedTemplates = data.templates;
+      renderTemplatesList();
+      console.log("✅ Templates loaded:", data.templates.length, "templates");
+    } else {
+      console.error("❌ Failed to load templates:", data.message);
+      showToast("Failed to load templates", "error");
+    }
+  } catch (error) {
+    console.error("❌ Error loading templates:", error);
+    showToast("Error loading templates: " + error.message, "error");
+  }
+}
 
-      listContainer.innerHTML = ""; // Clear existing
+function renderTemplatesList() {
+  const listContainer = document.getElementById("templates-list");
+  if (!listContainer) return;
 
-      data.templates.forEach((template) => {
+  const searchInput = document.getElementById("template-search-input");
+  const query = searchInput ? searchInput.value.toLowerCase() : "";
+
+  listContainer.innerHTML = ""; // Clear existing
+
+  const filtered = loadedTemplates.filter(t => 
+    t.name.toLowerCase().includes(query) || 
+    t.preview_subject.toLowerCase().includes(query) ||
+    t.preview_body.toLowerCase().includes(query)
+  );
+
+  if (filtered.length === 0) {
+    listContainer.innerHTML = '<div class="text-sm text-gray-500 italic py-4 text-center">No templates match your search.</div>';
+    return;
+  }
+
+  filtered.forEach((template) => {
         const templateEl = document.createElement("div");
         templateEl.className =
           "border rounded p-4 bg-gray-50 hover:bg-gray-100 transition cursor-pointer";
@@ -454,6 +517,13 @@ async function loadTemplates() {
               </div>
             </div>
             <div class="flex gap-2 ml-4">
+              <button
+                class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition font-medium"
+                onclick="event.stopPropagation(); duplicateTemplate(${template.id})"
+                title="Duplicate this template"
+              >
+                📋 Duplicate
+              </button>
               <button
                 class="text-xs px-2 py-1 ${template.active ? "bg-green-200 text-green-800" : "bg-gray-300 text-gray-700"} rounded hover:opacity-75"
                 onclick="toggleTemplateActive(${template.id}, ${!template.active})"
@@ -474,15 +544,74 @@ async function loadTemplates() {
 
         listContainer.appendChild(templateEl);
       });
+}
 
-      console.log("✅ Templates loaded:", data.templates.length, "templates");
-    } else {
-      console.error("❌ Failed to load templates:", data.message);
-      showToast("Failed to load templates", "error");
+function filterTemplates() {
+  renderTemplatesList();
+}
+
+async function duplicateTemplate(id) {
+  try {
+    const response = await fetch(`/api/templates/${id}`);
+    const data = await response.json();
+    
+    if (data.success && data.template) {
+      const t = data.template;
+      // Show new form
+      const form = document.getElementById("template-form");
+      if (form) form.classList.remove("hidden");
+      
+      // Pre-fill
+      document.getElementById("template-name-input").value = t.name + " (Copy)";
+      document.getElementById("template-subject-input").value = t.subject;
+      document.getElementById("template-body-input").value = t.body;
+      
+      // Scroll to form
+      form.scrollIntoView({ behavior: 'smooth' });
     }
-  } catch (error) {
-    console.error("❌ Error loading templates:", error);
-    showToast("Error loading templates: " + error.message, "error");
+  } catch(e) {
+    console.error(e);
+    showToast("Error duplicating template", "error");
+  }
+}
+
+async function sendTestEmail() {
+  const emailInput = document.getElementById("test-email-address");
+  const subjectStr = document.getElementById("edit-template-subject").value;
+  const bodyStr = document.getElementById("edit-template-body").value;
+  
+  if (!emailInput || !emailInput.value) {
+    showToast("Please enter a test email address", "warning");
+    return;
+  }
+  
+  const originalBtnText = event.target.textContent;
+  event.target.textContent = "Sending...";
+  event.target.disabled = true;
+  
+  try {
+    const response = await fetch("/api/templates/test_email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to_email: emailInput.value,
+        subject: subjectStr,
+        body: bodyStr
+      })
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      showToast("Test email sent successfully!", "success");
+    } else {
+      showToast(data.message || "Failed to send test email", "error");
+    }
+  } catch(e) {
+    console.error(e);
+    showToast("Error sending test email", "error");
+  } finally {
+    event.target.textContent = originalBtnText;
+    event.target.disabled = false;
   }
 }
 

@@ -478,7 +478,39 @@ def preview_template(template_id):
             "success": True,
             "preview": preview
         })
-    
     except Exception as e:
         print(f"Error previewing template: {e}")
         return jsonify({"error": f"Failed to preview template: {str(e)}"}), 500
+
+@dashboard_bp.route("/api/templates/test_email", methods=["POST"])
+def api_test_email():
+    """Send a test email with the specified details"""
+    try:
+        data = request.get_json()
+        
+        to_email = data.get("to_email")
+        raw_subject = data.get("subject", "")
+        raw_body = data.get("body", "")
+        
+        if not to_email:
+            return jsonify({"success": False, "message": "Email address is required"}), 400
+            
+        mock_template = {
+            "name": "Test Template",
+            "subject": raw_subject,
+            "body": raw_body
+        }
+        
+        from services.template_service import TemplateService
+        personalized = TemplateService.personalize_template(mock_template, "Sample Channel")
+        
+        from modules.email_sender import send_test_email
+        result = send_test_email(to_email, personalized["subject"], personalized["body"])
+        
+        if result["success"]:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+    except Exception as e:
+        print(f"Error testing template: {e}")
+        return jsonify({"error": f"Failed to test template: {str(e)}"}), 500
