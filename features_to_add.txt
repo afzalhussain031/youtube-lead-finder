@@ -25,33 +25,6 @@ Below are **concrete UI/UX improvements** you can make to this project, grouped 
 
 
 
-## 6) General UX / Polish Improvements
-
-### 6.1 Add “Help / Docs” area
-**Improvements:**
-- Add a “Help” modal or sidebar that explains:
-  - How discovery works
-  - What quota means
-  - How scoring works
-- Provide tooltips on buttons (what does “clear tokens” mean?).
-
-**Where to change:**
-- `templates/index.html` add help section.
-- `static/script.js` add tooltip logic or help modal.
-
----
-
-### 6.2 Improve Responsiveness & Accessibility
-**Improvements:**
-- Guarantee the UI works on mobile (buttons, table scroll, modals).
-- Ensure all interactive elements have accessible labels.
-- Ensure keyboard navigation works for modals & tables.
-
-**Where to change:**
-- CSS improvements in `static/style.css`
-- HTML accessibility improvements (aria-* attributes)
-
----
 
 ### 6.3 Add “Dark Mode”
 **Improvement:**

@@ -536,3 +536,126 @@
 #discovery-config-modal > div {
   animation: slideUp 0.3s ease-out;
 }
+
+/* ================================================================
+   DARK MODE THEME OVERRIDES
+   ================================================================ */
+
+html.dark body {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+html.dark .bg-gray-50, html.dark .bg-white {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+html.dark body > .bg-gray-50, html.dark .bg-gray-50.min-h-screen {
+  background-color: #111827 !important;
+}
+
+html.dark .text-gray-900, html.dark .text-gray-800 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .text-gray-700, html.dark .text-gray-600, html.dark .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+html.dark .border-gray-200, html.dark .border-gray-300, 
+html.dark .border-b, html.dark .border-t, html.dark .border {
+  border-color: #374151 !important;
+}
+
+html.dark .bg-gray-100, html.dark .bg-gray-200 {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark .hover\:bg-gray-200:hover {
+  background-color: #4b5563 !important;
+}
+
+html.dark .hover\:bg-gray-100:hover, html.dark .table-row:hover {
+  background-color: #4b5563 !important;
+}
+
+html.dark .hover\:bg-gray-50:hover {
+  background-color: #374151 !important;
+}
+
+html.dark input, html.dark select, html.dark textarea {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+html.dark .card, html.dark .table-wrapper {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+html.dark .card-header {
+  background-color: #111827 !important;
+  border-bottom-color: #374151 !important;
+}
+
+html.dark .table-header {
+  color: #d1d5db !important;
+}
+
+html.dark .table-cell {
+  color: #e5e7eb !important;
+}
+
+html.dark .table-row {
+  border-top-color: #374151 !important;
+}
+
+/* Status/Alert boxes */
+html.dark .bg-green-50, html.dark .bg-green-100 {
+  background-color: rgba(6, 78, 59, 0.4) !important;
+  color: #d1fae5 !important;
+}
+html.dark .border-green-200, html.dark .border-green-300 {
+  border-color: #047857 !important;
+}
+html.dark .bg-red-50, html.dark .bg-red-100 {
+  background-color: rgba(127, 29, 29, 0.4) !important;
+  color: #fee2e2 !important;
+}
+html.dark .border-red-200, html.dark .border-red-300 {
+  border-color: #b91c1c !important;
+}
+html.dark .text-red-500, html.dark .text-red-600 {
+  color: #fca5a5 !important;
+}
+html.dark .bg-yellow-50, html.dark .bg-orange-50 {
+  background-color: rgba(120, 53, 15, 0.4) !important;
+  color: #fef3c7 !important;
+}
+
+/* Badges */
+html.dark .badge-sent, html.dark .badge-active, html.dark .badge-success {
+  background-color: rgba(6, 78, 59, 0.6) !important;
+  color: #a7f3d0 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+html.dark .badge-pending, html.dark .badge-draft {
+  background-color: rgba(120, 53, 15, 0.6) !important;
+  color: #fde68a !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .badge-inactive, html.dark .badge-error, html.dark .badge-failed {
+  background-color: rgba(127, 29, 29, 0.6) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Modal overlays */
+html.dark .bg-black.bg-opacity-50 {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}

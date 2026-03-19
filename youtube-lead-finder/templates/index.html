@@ -14,6 +14,11 @@
       href="{{ url_for('static', filename='style.css') }}"
     />
     <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+    <script>
+      if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
   </head>
   <body class="bg-gray-50 min-h-screen font-sans text-gray-900">
     <div class="container-main">
@@ -27,14 +32,25 @@
             Manage and send personalized emails to your leads efficiently.
           </p>
         </div>
-        <button 
-          onclick="openHelpModal()" 
-          class="btn-secondary flex items-center justify-center gap-2 shadow-sm whitespace-nowrap"
-          aria-label="Open Help Documentation"
-          title="Learn how to use the dashboard features"
-        >
-          <span class="text-xl">ℹ️</span> Help & Docs
-        </button>
+        <div class="flex gap-2">
+          <button 
+            id="theme-toggle-btn"
+            onclick="toggleDarkMode()" 
+            class="btn-secondary flex items-center justify-center shadow-sm"
+            aria-label="Toggle Dark Mode"
+            title="Switch between light and dark themes"
+          >
+            <span class="text-xl" id="theme-toggle-icon">🌙</span>
+          </button>
+          <button 
+            onclick="openHelpModal()" 
+            class="btn-secondary flex items-center justify-center gap-2 shadow-sm whitespace-nowrap"
+            aria-label="Open Help Documentation"
+            title="Learn how to use the dashboard features"
+          >
+            <span class="text-xl">ℹ️</span> Help & Docs
+          </button>
+        </div>
       </header>
 
       <!-- ============================================================

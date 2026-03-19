@@ -2303,6 +2303,29 @@ function closeHelpModal() {
   document.getElementById("help-modal").classList.add("hidden");
 }
 
+// ==========================================
+// Theme (Dark Mode) Management
+// ==========================================
+
+function toggleDarkMode() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  updateThemeIcon(isDark);
+}
+
+function updateThemeIcon(isDark) {
+  const icon = document.getElementById('theme-toggle-icon');
+  if (icon) {
+    icon.textContent = isDark ? '☀️' : '🌙';
+  }
+}
+
+// Set initial icon state
+document.addEventListener('DOMContentLoaded', () => {
+  const isDark = document.documentElement.classList.contains('dark');
+  updateThemeIcon(isDark);
+});
+
 // Initial load
 loadLeads();
 loadProgress();
