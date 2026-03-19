@@ -2291,6 +2291,18 @@ function updateLogsCount() {
   }
 }
 
+// ==========================================
+// Help Modal Management
+// ==========================================
+
+function openHelpModal() {
+  document.getElementById("help-modal").classList.remove("hidden");
+}
+
+function closeHelpModal() {
+  document.getElementById("help-modal").classList.add("hidden");
+}
+
 // Initial load
 loadLeads();
 loadProgress();

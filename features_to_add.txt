@@ -24,64 +24,6 @@ Below are **concrete UI/UX improvements** you can make to this project, grouped 
 
 
 
-## 4) Email Sending UX Enhancements
-
-### 4.1 Campaign UI (progress / pause / resume)
-**Current:** send logic exists but UI for “pause” / “stop” is not wired (or incomplete).
-
-**Improvements:**
-- Implement real pause/resume with a backend state tracker, not just a client-side `sendState` object (so it persists if page refreshes).
-- Add **per-email status updates** (sent, failed, retrying).
-- Add **estimated time remaining**, current speed (emails/minute).
-- Provide a **“Retry failed”** button for errors.
-
-**Where to change:**
-- Add backend state store (probably in DB or in-memory global) to track sending status.
-- Enhance `modules/email_sender.py` or create an **EmailCampaignService** that can be polled.
-- Update UI in `static/script.js` to poll status and update progress panel.
-
----
-
-### 4.2 Improve “sent” tracking + visibility
-**Current:** stored in `data/sent_log.csv`, only email per line.
-
-**Improvements:**
-- Show **full email history** in the UI (what template was used, when sent).
-- Add pagination + filtering (e.g., show “last 30 days”, show “failed”).
-- Show **open/click tracking** (once implemented).
-
-**Where to change:**
-- Expand `sent_log.csv` to include timestamp, template, status.
-- Update services (email_services.py, `modules/email_sender.py`) to save those details.
-- Add new dashboard table for “Sent History”.
-
----
-
-## 5) Quota + Rate Limit UX Enhancements (beyond current changes)
-
-### 5.1 Add Quota Alert / Threshold Notification
-**Improvements:**
-- When quota usage hits X% (e.g., 80%), show a persistent banner:
-  - “⚠️ Quota nearly exhausted. Consider reducing keywords or pausing discovery.”
-- Option to set your own threshold (e.g., 70/80/90%).
-
-**Where to change:**
-- Frontend: check quota in `loadQuotaStatus` and display banner if threshold exceeded.
-- Optionally store threshold in config.
-
----
-
-### 5.2 Show Quota History Chart
-**Improvements:**
-- Let users see quota usage over time (last 24h / 7 days).
-- Great for understanding whether you need more API quota or to slow down discovery.
-
-**Where to change:**
-- Persist daily quota snapshots in DB (table `quota_history`)
-- Add chart UI (chart.js or simple SVG bar)
-- Endpoint: `/api/quota/history`
-
----
 
 ## 6) General UX / Polish Improvements
 

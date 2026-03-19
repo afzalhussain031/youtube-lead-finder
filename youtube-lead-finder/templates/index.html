@@ -20,11 +20,21 @@
       <!-- ============================================================
          HEADER SECTION
          ============================================================ -->
-      <header class="mb-8">
-        <h1 class="text-4xl font-bold mb-2">📧 YouTube Lead Dashboard</h1>
-        <p class="text-gray-600 text-lg">
-          Manage and send personalized emails to your leads efficiently.
-        </p>
+      <header class="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+        <div>
+          <h1 class="text-4xl font-bold mb-2">📧 YouTube Lead Dashboard</h1>
+          <p class="text-gray-600 text-lg">
+            Manage and send personalized emails to your leads efficiently.
+          </p>
+        </div>
+        <button 
+          onclick="openHelpModal()" 
+          class="btn-secondary flex items-center justify-center gap-2 shadow-sm whitespace-nowrap"
+          aria-label="Open Help Documentation"
+          title="Learn how to use the dashboard features"
+        >
+          <span class="text-xl">ℹ️</span> Help & Docs
+        </button>
       </header>
 
       <!-- ============================================================
@@ -205,6 +215,8 @@
               id="start-discovery-btn"
               class="btn-primary"
               onclick="startDiscovery()"
+              aria-label="Start YouTube Channel Discovery"
+              title="Begins searching for channels matching your active keywords and region"
             >
               🚀 Start Discovery
             </button>
@@ -233,6 +245,8 @@
               id="templates-btn"
               class="btn-secondary"
               onclick="openTemplatesModal()"
+              aria-label="Manage Email Templates"
+              title="Create, edit, or test your email outreach templates"
             >
               📧 Manage Email Templates
             </button>
@@ -240,6 +254,8 @@
               id="keywords-btn"
               class="btn-secondary"
               onclick="openKeywordsModal()"
+              aria-label="Manage Search Keywords"
+              title="Edit the search phrases the engine looks for on YouTube"
             >
               🔑 Manage Keywords
             </button>
@@ -251,8 +267,10 @@
               <h3 class="font-semibold">📝 Recent Logs</h3>
               <button
                 id="clear-discovery-logs-btn"
-                class="text-sm px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded transition"
+                class="text-xs text-gray-500 hover:text-gray-700"
                 onclick="clearLogs()"
+                aria-label="Clear discovery logs"
+                title="Wipe the current log output display (safe: does not delete log files)"
               >
                 Clear Logs
               </button>
@@ -470,7 +488,7 @@
          LEADS TABLE SECTION
          States: Loading, Empty, Table
          ============================================================ -->
-      <section class="table-wrapper">
+      <section class="table-wrapper overflow-x-auto" role="region" aria-label="Leads Data Table" tabindex="0">
         <!-- Loading State -->
         <div id="loading-state" class="empty-state hidden">
           <div class="loading-spinner mx-auto mb-3"></div>
@@ -1200,6 +1218,65 @@
         >
           ⚡ Take action
         </button>
+      </div>
+    </div>
+    <!-- ============================================================
+         HELP & DOCS MODAL (NEW)
+         ============================================================ -->
+    <div
+      id="help-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4 transition-opacity"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="help-modal-title"
+    >
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+        <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+          <h2 id="help-modal-title" class="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <span>ℹ️</span> How to Use the Dashboard
+          </h2>
+          <button
+            onclick="closeHelpModal()"
+            class="text-gray-500 hover:text-gray-800 focus:outline-none text-2xl leading-none"
+            aria-label="Close Help Documentation"
+            title="Close"
+          >&times;</button>
+        </div>
+        <div class="p-6 overflow-y-auto space-y-6 text-gray-700 text-sm">
+          
+          <section>
+            <h3 class="text-lg font-semibold text-gray-900 border-b pb-1 mb-2">🔍 1. Discovery System</h3>
+            <p class="mb-2">The Discovery engine automates finding YouTube channels.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>Keywords:</strong> Search terms the engine uses (e.g., "minecraft gameplay").</li>
+              <li><strong>Quota:</strong> YouTube limits how many searches you can perform daily. If you hit your quota, discovery will stop until reset.</li>
+              <li><strong>Filters:</strong> You can set minimum subscriber limits and region tags to only pull relevant channels.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3 class="text-lg font-semibold text-gray-900 border-b pb-1 mb-2">⭐ 2. Lead Scoring</h3>
+            <p class="mb-2">The system grades each channel automatically from 0-100 to help you prioritize outreach:</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>High scores (&gt;70) generally have a great ratio of views, frequent uploads, and active engagement.</li>
+              <li>You can easily filter for "⭐ High Score" tags in the Lead Table to target them first!</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3 class="text-lg font-semibold text-gray-900 border-b pb-1 mb-2">📧 3. Email Campaigns</h3>
+            <p class="mb-2">Send bulk outreach safely. Manage your pitches in the Template Manager.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>Variables:</strong> Embed <code>{channel_name}</code> in templates to auto-personalize them.</li>
+              <li><strong>A/B Testing:</strong> Set two templates as Active simultaneously to automatically split-test them during bulk sends.</li>
+              <li><strong>Variations:</strong> Inside a template, use <code>|</code> to randomly cycle greetings (e.g. <code>Hi|Hello</code>).</li>
+            </ul>
+          </section>
+
+        </div>
+        <div class="px-6 py-4 border-t bg-gray-50 rounded-b-lg flex justify-end">
+          <button class="btn-primary" onclick="closeHelpModal()" aria-label="Close Help Dialog">Got it!</button>
+        </div>
       </div>
     </div>
   </body>
