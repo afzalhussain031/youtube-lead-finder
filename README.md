@@ -1,106 +1,200 @@
-<div align="center">
-  <h1>🎯 YouTube Creator Lead Generation System</h1>
-  <p><strong>A full-stack Flask web application that automatically discovers YouTube creators, qualifies them, extracts contact emails, and mass-sends personalized outreach emails directly from the dashboard.</strong></p>
-  
-  [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-  [![YouTube API](https://img.shields.io/badge/YouTube%20API-v3-red.svg)](https://developers.google.com/youtube/v3)
-  [![Flask](https://img.shields.io/badge/Framework-Flask-black.svg)](https://flask.palletsprojects.com/)
-  [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-</div>
+# YouTube Lead Finder
 
----
+A comprehensive tool for discovering, analyzing, and managing YouTube channel leads for business outreach and networking. Built with Flask and the YouTube Data API v3, this application automates the process of finding relevant YouTube channels, extracting contact information, and managing lead generation campaigns.
 
-## 🚀 Overview
+## 🚀 Features
 
-The original script-based YouTube crawler has been completely reimagined into a **beautiful, fully-functional web dashboard**. Built for content creators, marketers, and businesses, this app provides an end-to-end interface for finding high-quality YouTube influencers and launching outreach campaigns without ever touching a terminal.
+### Lead Discovery Pipeline
 
-### ✨ Key Features
+- **Intelligent Keyword Generation**: Automatically expands base keywords into comprehensive search terms
+- **YouTube API Integration**: Searches videos and extracts channel information using YouTube Data API v3
+- **Channel Analysis**: Analyzes subscriber counts, upload activity, and channel metrics
+- **Email Extraction**: Automatically finds and validates email addresses from channel descriptions and about pages
+- **Lead Scoring**: Intelligent scoring system based on channel relevance, engagement, and business potential
 
-- **🌐 Interactive Web Dashboard**: A slick, responsive UI built with Tailwind CSS and Vanilla JavaScript.
-- **🌙 Native Dark Mode**: Toggle seamlessly between Light and Dark themes (persisted reliably via your browser's local storage).
-- **🔍 Channel Discovery Wizard**: Configure keywords, regions, languages, and strict subscriber thresholds via a user-friendly modal to find the exact creators you want.
-- **✉️ Integrated Mass Email Sender**: Connect your standard SMTP email credentials to write custom email templates and mass-send them simultaneously in the background (preventing the UI from freezing!)
-- **📊 Live Progress Tracking**: Watch discovery pipelines and email sending queues operate in real-time with visual progress bars.
-- **📉 API Quota Protection**: Avoid costly API bills! The app actively tracks your remaining Google YouTube Developer API Quota as a live dashboard metric and stops execution if you exhausted your daily limit.
-- **🗂️ Data Export & Management**: Manage all valid leads in a searchable table. Delete leads, track which ones you've already contacted, or export identically to a `.csv` file.
+### Web Dashboard
 
-## 📸 Dashboard Preview
+- **Real-time Discovery Status**: Monitor discovery progress with live updates
+- **Interactive Lead Management**: View, filter, and manage discovered leads
+- **Email Campaign Management**: Send personalized emails to leads with customizable templates
+- **Quota Tracking**: Monitor YouTube API usage and remaining quota
+- **CSV Export**: Export leads to CSV for external use
 
-*(Drop a screenshot of your web dashboard here!)*
+### Advanced Features
 
----
+- **Incremental Updates**: Smart caching system that updates channel data efficiently
+- **Geographic Targeting**: Filter channels by region and language
+- **Subscriber Filtering**: Target channels within specific subscriber ranges
+- **Rate Limiting**: Built-in rate limiting to respect API quotas
+- **Activity Monitoring**: Track channel activity and filter inactive channels
 
-## 🛠️ Installation & Setup
+## 📋 Prerequisites
 
-### 1. Prerequisites
-- **Python 3.8+** installed on your system.
-- A **YouTube Data API v3 key** (Get one from the [Google Cloud Console](https://console.cloud.google.com/)).
-- Optional (for emailing): Ensure your Gmail or SMTP provider allows "App Passwords."
+- Python 3.8 or higher
+- YouTube Data API v3 key (obtain from [Google Cloud Console](https://console.cloud.google.com/))
+- Internet connection for API calls
 
-### 2. Clone the Repository
-```bash
-git clone https://github.com/yourusername/youtube-lead-finder.git
-cd youtube-lead-finder
-```
+## 🛠️ Installation
 
-### 3. Create a Virtual Environment
-```bash
-python -m venv venv
+1. **Clone the repository:**
 
-# On Windows:
-venv\Scripts\activate
-# On Mac/Linux:
-source venv/bin/activate
-```
-
-### 4. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 5. Start the Web Server
-Launch the Flask development server:
-```bash
-python app.py
-```
-> **Note:** The console output will say `Running on http://127.0.0.1:5000`. Open this exact URL in your browser to access the Web Dashboard!
-
----
-
-## ⚙️ How to Use It
-
-1. **Set Up Credentials**: In the web UI, click **"🔑 Configure Credentials"**. Enter your Google YouTube API Key and (optionally) your SMTP App Password to enable the mailing system.
-2. **Launch the Discovery Wizard**: Click **"🚀 Start Discovery"**. Define your keywords (e.g., `tech reviews, unboxing`), select target regions/languages, and define minimum and maximum subscriber limits.
-3. **Wait for Pipelines**: The backend scripts will rapidly search the API, navigate channel "About" pages to scrape for business emails, calculate a "Lead Quality Score", and inject the valid leads dynamically into the browser table.
-4. **Mass Outreach**: Select leads using checkboxes, write a custom HTML message template with variables (e.g., `Hi {Channel Name}!`), and click **Send Selected**. The background threads will begin safely distributing the emails through your connected SMTP provider.
-
----
-
-## 💾 Project Storage Structure
-
-This app saves your operational data persistently in the `data/` directory so you never lose progress:
-- `data/leads.csv` — Stores all structurally valid channels discovered by the pipeline.
-- `data/sent_log.csv` — Retains the history of emails you have successfully dispatched to prevent double-messaging.
-- `data/keywords.txt` — Maintains your custom lists of expansion seed keywords.
-- *(Note: Legacy SQLite database references from the older CLI-only codebase are also stored here depending on your scraping preferences).*
-
----
-
-## ☁️ Deployment Guide (Portfolio)
-
-If you wish to deploy this app online so a recruiter or end-user can test the dashboard, it is structured to support easy cloud deployment:
-1. **Host Options**: Use a free cloud hosting provider supporting Python WSGI (like **Render** or **PythonAnywhere**).
-2. **Production Web Server**: Make sure your cloud provider uses `gunicorn` instead of `app.run()`. Add a `Start Command`: 
    ```bash
-   gunicorn app:app
+   git clone https://github.com/afzalhussain031/youtube-lead-finder.git
+   cd youtube-lead-finder
    ```
-3. **Ephemeral Disks Warning**: Free cloud tiers (like Render) restart servers randomly. Any leads stored in the `data/*.csv` files will be wiped when the container sleeps unless you upgrade to a Persistent Volume disk or refactor the app to use an external PostgreSQL database. 
 
-## ⚖️ License & Disclaimer
+2. **Navigate to the project directory:**
 
-**License**: Distributed under the MIT License. See `LICENSE` for more information.
+   ```bash
+   cd youtube-lead-finder
+   ```
 
-**Disclaimer**: This tool is designed for educational use and ethical B2B outreach.
-- By using this software, you are responsible for maintaining compliance with YouTube's Terms of Service regarding botting or scraping API endpoints.
-- Ensure your cold-emailing practices comply with international spam legislation (CAN-SPAM, GDPR, CCPA).
-- Do not utilize this stack for malicious data scraping or unsolicited mass spam.
+3. **Install dependencies:**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables:**
+   Create a `.env` file in the project root with your YouTube API key:
+
+   ```
+   YOUTUBE_API_KEY=your_api_key_here
+   ```
+
+5. **Configure keywords:**
+   Edit `data/keywords.txt` with your target keywords (one per line).
+
+## ⚙️ Configuration
+
+### API Configuration (`config.py`)
+
+- `API_KEY`: Your YouTube Data API v3 key
+- `MAX_RESULTS`: Results per search (default: 50)
+- `MAX_WORKERS`: Concurrent API calls (default: 10)
+- `MAX_CHANNELS_TO_PROCESS`: Channel processing limit (default: 5000)
+
+### Filtering Options
+
+- `MIN_SUBSCRIBERS` / `MAX_SUBSCRIBERS`: Subscriber range filtering
+- `DEFAULT_REGION`: Geographic targeting (ISO country code)
+- `DEFAULT_LANGUAGE`: Language filtering (ISO language code)
+- `INACTIVE_DAYS`: Days since last upload to consider inactive
+
+## 🚀 Usage
+
+### Running the Application
+
+1. **Start the Flask web application:**
+
+   ```bash
+   python app.py
+   ```
+
+2. **Open your browser and navigate to:**
+   ```
+   http://localhost:5000
+   ```
+
+### Using the Web Dashboard
+
+1. **Discovery Pipeline:**
+   - Click "🚀 Run Discovery" to start finding leads
+   - Monitor progress in the discovery status section
+   - View discovered leads in the table below
+
+2. **Lead Management:**
+   - Filter leads by score, subscribers, or keywords
+   - View detailed channel information
+   - Export leads to CSV
+
+3. **Email Campaigns:**
+   - Select leads to contact
+   - Choose email templates
+   - Send personalized emails
+
+### Command Line Usage
+
+For batch processing without the web interface:
+
+```bash
+python main.py
+```
+
+## 📊 Data Structure
+
+### Database Schema
+
+- **channels**: Channel metadata, subscriber counts, upload activity
+- **videos**: Video information for activity tracking
+- **leads**: Processed leads with scores and contact info
+- **quota_tracking**: API usage monitoring
+
+### Output Files
+
+- `data/leads.csv`: Exported lead data
+- `data/sent_log.csv`: Email sending history
+- `logs/`: Application logs
+
+## 🔧 API Integration
+
+### YouTube Data API v3
+
+The application uses the following API endpoints:
+
+- `search.list`: Video search with keyword filtering
+- `channels.list`: Channel information retrieval
+- `videos.list`: Video metadata for activity analysis
+
+### Quota Management
+
+- Daily quota: 10,000 units
+- Cost per search: 100 units
+- Cost per channel lookup: 1 unit
+- Automatic quota tracking and warnings
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Setup
+
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+python -m pytest
+
+# Format code
+black .
+```
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## ⚠️ Disclaimer
+
+This tool is for educational and business outreach purposes only. Always respect YouTube's Terms of Service, privacy policies, and applicable laws when collecting and using contact information. The developers are not responsible for misuse of this tool.
+
+## 🆘 Support
+
+- **Issues**: [GitHub Issues](https://github.com/afzalhussain031/youtube-lead-finder/issues)
+- **Documentation**: Check the inline code comments and this README
+- **API Documentation**: [YouTube Data API v3 Docs](https://developers.google.com/youtube/v3/docs)
+
+## 🔄 Version History
+
+- **v1.0.0**: Initial release with core discovery and email features
+- **v1.1.0**: Added web dashboard and real-time monitoring
+- **v1.2.0**: Improved lead scoring and filtering options
+
+---
+
+**Built with ❤️ for efficient YouTube lead generation**</content>
+<parameter name="filePath">c:\Users\afzal\OneDrive\Desktop\Studies\Projects\youtube-lead-finder\README.md
